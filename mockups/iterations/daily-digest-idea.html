@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Dashboard</title>
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f8fafc;
+      --color-border-secondary: #e2e8f0;
+      --color-border-tertiary: #cbd5e1;
+      --color-text-primary: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-tertiary: #64748b;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #f1f5f9;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    #root {
+      width: 100%;
+      max-width: 720px;
+      background: var(--color-background-primary);
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+    * { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const PURPLE = "#534AB7";
+    const PURPLE_L = "#EEEDFE";
+    const PURPLE_M = "#7F77DD";
+    const PURPLE_D = "#3C3489";
+    const GREEN = "#3B6D11";
+    const GREEN_L = "#EAF3DE";
+    const AMBER = "#854F0B";
+    const AMBER_L = "#FAEEDA";
+    const RED = "#A32D2D";
+    const RED_L = "#FCEBEB";
+    const BLUE = "#185FA5";
+    const BLUE_L = "#E6F1FB";
+
+    const TAG_CFG = {
+      "Slash Command": { bg:BLUE_L,    color:BLUE,     border:"#B5D4F4" },
+      "Prompt Quality":{ bg:RED_L,     color:RED,      border:"#F7C1C1" },
+      "Workflow":      { bg:PURPLE_L,  color:PURPLE_D, border:"#CECBF6" },
+      "Skill/Agent":   { bg:GREEN_L,   color:GREEN,    border:"#C0DD97" },
+      "Context":       { bg:AMBER_L,   color:AMBER,    border:"#FAC775" },
+      "Pattern":       { bg:BLUE_L,    color:BLUE,     border:"#B5D4F4" },
+      "Win":           { bg:GREEN_L,   color:GREEN,    border:"#C0DD97" },
+    };
+
+    function Tag({t}) {
+      const s = TAG_CFG[t]||TAG_CFG["Pattern"];
+      return <span style={{fontSize:10,fontWeight:500,padding:"2px 9px",borderRadius:20,background:s.bg,color:s.color,border:`1px solid ${s.border}`,letterSpacing:"0.02em",whiteSpace:"nowrap"}}>{t}</span>;
+    }
+
+    const NAV = [
+      {id:"today",   icon:"◉", label:"Today"},
+      {id:"insights",icon:"◈", label:"Insights"},
+      {id:"progress",icon:"◎", label:"Progress"},
+      {id:"ask",     icon:"◇", label:"Ask"},
+    ];
+
+    const METRICS = [
+      {label:"Sessions",    value:"6",    sub:"3 deep · 3 shallow",    dir:null},
+      {label:"Active time", value:"4h 12m",sub:"↑ 18% vs avg",        dir:"up"},
+      {label:"Prompts",     value:"67",   sub:"14 corrections (21%)", dir:null},
+      {label:"Avg quality", value:"2.9",  sub:"↓ from 3.4 yesterday", dir:"down"},
+      {label:"Files edited",value:"9",    sub:"service.py +8 more",   dir:null},
+      {label:"Deep work",   value:"62%",  sub:"↑ above 54% avg",      dir:"up"},
+    ];
+
+    const INSIGHTS = [
+      {tag:"Slash Command", title:"You wrote this PR prompt 4 times yesterday",
+       quoted:`"i have manually staged the changes, now you can raise the PR against the development branch"`,
+       body:"You typed a variation of this exact instruction at 09:14, 11:32, 14:07, and 16:45. That is 4 minutes of retyping something Claude should already know. A slash command turns this into two keystrokes.",
+       history:"9 times across the last 7 days.",
+       prompt:`/create-slash-command name: raise-pr\ndescription: Stage changes and raise PR against development branch\nprompt: I have manually staged all the changes. Please raise a PR against the development branch. Use the recent commits as the PR description. Do not add any co-authored-by lines.`,
+       isTask:true},
+      {tag:"Prompt Quality", title:`"Do it for me" led to a full revert 40 minutes later`,
+       quoted:`"do it for me"`,
+       body:"At 10:22 you sent this with no context. Claude built something, you worked with it for 8 prompts, then at 11:04 you reverted everything. The session cost 40 minutes.",
+       history:"This pattern — short vague instruction followed by revert — appeared 3 times this week.",
+       reframe:`Instead: "I am building [feature name]. I want the APIs in the [specific controller]. Here is what done looks like: [acceptance criteria]." This front-loads context and eliminates the revert loop.`},
+      {tag:"Skill/Agent", title:"You are doing manually what an agent could do",
+       quoted:`"fetch the comments from the PR and create a checklist and resolve them"`,
+       body:"You ran this workflow 3 times yesterday across different PRs. Each time you typed the instruction, waited, reviewed, iterated. This is a perfect candidate for a reusable agent.",
+       history:"This prompt pattern appeared 11 times in the last 2 weeks.",
+       prompt:`Create a Claude agent called "pr-review-resolver" that:\n1. Accepts a PR number as input\n2. Fetches all open review comments via: gh pr view {number} --comments\n3. Generates a structured checklist grouped by file\n4. Attempts to resolve each item and marks it done\n5. Summarises what was resolved vs needs manual attention\n\nSave to .claude/agents/pr-review-resolver.md`,
+       isTask:true},
+      {tag:"Workflow", title:"23 prompts to move a component — there is a faster path",
+       quoted:`Session on embedder.py — 09:04 to 10:51 · 23 prompts · 6 corrections`,
+       body:"This session ran 107 minutes. The core task — refactoring the embedder — should have taken 30 minutes. The long tail happened because you iterated on structure without a defined target state upfront.",
+       history:"4 sessions over 20 prompts this week. All 4 lacked an upfront specification.",
+       reframe:`Before a refactor session send one planning prompt first: "Here is the current structure. Here is the target. Confirm you understand before making any changes." This eliminates 80% of mid-session corrections in refactor work.`},
+      {tag:"Context", title:"You gave Claude a file but not the feature — it guessed wrong",
+       quoted:`"update this file to handle the new flow"`,
+       body:"At 14:33 you shared service.py with this prompt. Claude updated based on its best guess of 'new flow'. You corrected it twice before the session produced something usable.",
+       history:"You used 'this', 'it', or 'the new thing' without definition 17 times this week.",
+       reframe:`Replace pronouns with specifics: "Update service.py to handle the post-sync webhook callback flow. After sync completes, call config.WEBHOOK_URL with the session ID and status."`},
+      {tag:"Pattern", title:"You switched projects at 15:30 mid-correction loop",
+       quoted:`Queue.py session — 7 corrections → project switch at 15:31`,
+       body:"At 15:22 you hit your 6th correction in the queue.py session. Eight minutes later you opened a new project. The queue.py problem was unresolved. You did not return to it yesterday.",
+       history:"In 2 of the 3 previous times you did this, you returned the next day and resolved it in under 5 prompts."},
+      {tag:"Workflow", title:"You are not using TodoWrite — Claude is losing track mid-session",
+       quoted:`Session with Agent, Bash, Edit, Glob, Read — no TodoWrite`,
+       body:"Yesterday's longest session used 5 tools but never TodoWrite. Without it, Claude restarts its mental model on each prompt in multi-step sessions.",
+       history:"You used TodoWrite in 2 of your last 18 multi-step sessions.",
+       prompt:`At the start of any multi-step session:\n\n"Before starting, use TodoWrite to create a task list. Break the work into steps. Mark each step done as you complete it. Do not proceed to the next step until the current one is done."`}
+    ];
+
+    const TODAY_TASK = {
+      tag:"Skill/Agent",
+      title:"Create the PR review resolver agent",
+      why:"You ran the 'fetch PR comments and create a checklist' workflow 3 times yesterday — 11 times in 2 weeks.",
+      time:"12 min",
+      steps:["Open Claude Code in second-brain-plugin","Copy the prompt below and send it","Review the generated file at .claude/agents/pr-review-resolver.md","Test it: type /pr-review-resolver and pass a PR number","Confirm it generates a checklist and resolves comments"],
+      prompt:`Create a Claude agent called "pr-review-resolver" that:\n1. Accepts a PR number as input\n2. Fetches all open review comments via: gh pr view {number} --comments\n3. Generates a structured checklist grouped by file\n4. Attempts to resolve each item and marks it done\n5. Summarises what was resolved vs needs manual attention\n\nSave to .claude/agents/pr-review-resolver.md`,
+      done:"You can type /pr-review-resolver on any PR and it generates a checklist automatically.",
+    };
+
+    const TASK_HIST = [
+      {day:"Mon",label:"Add error handling to service.py",done:true},
+      {day:"Tue",label:"Create /raise-pr slash command",done:true},
+      {day:"Wed",label:"Write planning prompt template for refactors",done:true},
+      {day:"Thu",label:"Create PR review resolver agent",done:false,today:true},
+    ];
+
+    const PROG_DATA = {
+      "Prompt specificity":[2.1,2.4,2.8,3.1,3.4,3.8],
+      "Correction rate":   [5.2,4.8,4.1,3.9,3.2,2.8],
+      "Deep work %":       [38,42,48,55,61,68],
+    };
+    const WEEKS = ["W1","W2","W3","W4","W5","W6"];
+
+    const WEAKNESS = [
+      {id:1,title:"Prompt specificity — vague instructions",sev:"High",  trend:"flat",      d:[1,1,0,1,0,1,1,1,0,1,0,1,0,1],active:true},
+      {id:2,title:"Error handling in implementation",       sev:"High",  trend:"improving", d:[1,2,2,2,3,3,3,4,3,4,4,5,4,5],active:false},
+      {id:3,title:"Context switching after blockers",       sev:"Medium",trend:"flat",      d:[2,2,1,2,2,1,1,2,1,2,1,1,2,1],active:false},
+      {id:4,title:"Testing prompt frequency",               sev:"Medium",trend:"regressing",d:[3,2,3,2,2,1,2,1,1,1,0,1,0,0],active:false},
+    ];
+
+    function Spark({d,trend,w=72,h=28}) {
+      const col = trend==="improving"?"#3B6D11":trend==="regressing"?"#A32D2D":"#854F0B";
+      const mn=Math.min(...d),mx=Math.max(...d),r=mx-mn||1;
+      const pts=d.map((v,i)=>`${(i/(d.length-1))*(w-4)+2},${h-2-((v-mn)/r)*(h-6)}`).join(" ");
+      const last = d[d.length-1];
+      const lx=(w-2), ly=h-2-((last-mn)/r)*(h-6);
+      return <svg width={w} height={h}><polyline points={pts} fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx={lx} cy={ly} r="2.5" fill={col}/></svg>;
+    }
+
+    function InsightCard({ins,idx}) {
+      const [open,setOpen]=useState(false);
+      const [copied,setCopied]=useState(false);
+      const copy=()=>{setCopied(true);setTimeout(()=>setCopied(false),2000)};
+      return (
+        <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,marginBottom:8,overflow:"hidden"}}>
+          <div style={{padding:"14px 16px"}}>
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",minWidth:18}}>#{idx+1}</span>
+              <Tag t={ins.tag}/>
+              {ins.isTask&&<span style={{fontSize:10,fontWeight:500,padding:"2px 8px",borderRadius:20,background:PURPLE_L,color:PURPLE_D,border:`1px solid #CECBF6`}}>has task</span>}
+            </div>
+            <div style={{fontSize:14,fontWeight:500,color:"var(--color-text-primary)",marginBottom:8,lineHeight:1.4}}>{ins.title}</div>
+            {ins.quoted&&<div style={{background:"var(--color-background-secondary)",borderLeft:`3px solid ${PURPLE_M}`,padding:"7px 12px",marginBottom:10,fontFamily:"var(--font-mono)",fontSize:11,color:"var(--color-text-secondary)",lineHeight:1.6,borderRadius:"0 6px 6px 0"}}>{ins.quoted}</div>}
+            <div style={{fontSize:13,color:"var(--color-text-secondary)",lineHeight:1.7,marginBottom:ins.history?6:0}}>{ins.body}</div>
+            {ins.history&&<div style={{fontSize:12,color:"var(--color-text-tertiary)",fontStyle:"italic",marginBottom:0}}>Also: {ins.history}</div>}
+          </div>
+          {(ins.reframe||ins.prompt)&&(
+            <div style={{borderTop:"0.5px solid var(--color-border-tertiary)",padding:"10px 16px",background:"var(--color-background-secondary)",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+              <button onClick={()=>setOpen(p=>!p)} style={{fontSize:12,fontWeight:500,color:PURPLE,background:"none",border:"none",cursor:"pointer",padding:0}}>
+                {open?(ins.reframe?"Hide reframe ↑":"Hide prompt ↑"):(ins.reframe?"Show better approach ↓":"Show prompt ↓")}
+              </button>
+            </div>
+          )}
+          {open&&(
+            <div style={{padding:"12px 16px",borderTop:"0.5px solid var(--color-border-tertiary)"}}>
+              {ins.reframe&&<div style={{background:GREEN_L,border:`1px solid #C0DD97`,borderRadius:8,padding:"10px 12px",marginBottom:ins.prompt?10:0}}><div style={{fontSize:10,fontWeight:500,color:GREEN,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:4}}>Better approach</div><div style={{fontSize:12,color:"#166534",lineHeight:1.7}}>{ins.reframe}</div></div>}
+              {ins.prompt&&<><div style={{background:"#1e293b",borderRadius:8,padding:"12px 14px",fontFamily:"var(--font-mono)",fontSize:11,color:"#e2e8f0",lineHeight:1.8,whiteSpace:"pre-wrap",marginBottom:8}}>{ins.prompt}</div><button onClick={copy} style={{fontSize:11,fontWeight:500,color:copied?GREEN:PURPLE,background:copied?GREEN_L:PURPLE_L,border:`1px solid ${copied?"#C0DD97":"#CECBF6"}`,borderRadius:6,padding:"5px 14px",cursor:"pointer"}}>{copied?"Copied ✓":"Copy prompt"}</button></>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function TodayView() {
+      const [taskDone,setTaskDone]=useState(false);
+      const [taskOpen,setTaskOpen]=useState(true);
+      const [copied,setCopied]=useState(false);
+      const streak=TASK_HIST.filter(t=>t.done).length+(taskDone?1:0);
+      const copy=()=>{setCopied(true);setTimeout(()=>setCopied(false),2200)};
+
+      return (
+        <div>
+          <div style={{marginBottom:24}}>
+            <div style={{fontSize:11,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:6}}>Thursday · April 24, 2026</div>
+            <div style={{fontSize:22,fontWeight:500,color:"var(--color-text-primary)",lineHeight:1.35,marginBottom:8,letterSpacing:"-0.01em"}}>Yesterday was a heavy debugging day.</div>
+            <div style={{fontSize:13,color:"var(--color-text-secondary)",lineHeight:1.75,maxWidth:560}}>Six sessions on second-brain-plugin. 4h 12m active. A 23-prompt session on embedder, a revert loop mid-morning, and a project switch at 15:30 after a correction spike. The system found 7 things worth your attention.</div>
+          </div>
+
+          <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,padding:"16px 18px",marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:12}}>Yesterday's snapshot</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              {METRICS.map((m,i)=>(
+                <div key={i} style={{background:"var(--color-background-secondary)",borderRadius:8,padding:"10px 12px"}}>
+                  <div style={{fontSize:10,color:"var(--color-text-tertiary)",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.04em"}}>{m.label}</div>
+                  <div style={{fontSize:17,fontWeight:500,color:"var(--color-text-primary)",marginBottom:2}}>{m.value}</div>
+                  <div style={{fontSize:11,color:m.dir==="up"?"#3B6D11":m.dir==="down"?"#A32D2D":"var(--color-text-tertiary)",fontWeight:m.dir?500:400}}>{m.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Today's task</div>
+            <div style={{border:`1px solid ${taskDone?"#C0DD97":"#CECBF6"}`,borderRadius:12,overflow:"hidden",background:taskDone?GREEN_L:PURPLE_L}}>
+              <div style={{padding:"14px 16px",cursor:taskDone?"default":"pointer",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}} onClick={()=>!taskDone&&setTaskOpen(p=>!p)}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                    <Tag t={TODAY_TASK.tag}/>
+                    <span style={{fontSize:11,color:taskDone?GREEN:PURPLE_D,fontWeight:500}}>~{TODAY_TASK.time}</span>
+                    {taskDone&&<span style={{fontSize:10,fontWeight:500,padding:"2px 8px",borderRadius:20,background:GREEN_L,color:GREEN,border:"1px solid #C0DD97"}}>✓ Complete</span>}
+                  </div>
+                  <div style={{fontSize:14,fontWeight:500,color:"var(--color-text-primary)",lineHeight:1.4,marginBottom:4}}>{TODAY_TASK.title}</div>
+                  <div style={{fontSize:12,color:taskDone?GREEN:PURPLE_D,lineHeight:1.5}}>{TODAY_TASK.why}</div>
+                </div>
+                {!taskDone&&<span style={{fontSize:13,color:PURPLE_M,marginLeft:10,transition:"transform 0.2s",display:"inline-block",transform:taskOpen?"rotate(180deg)":"rotate(0)"}}>▼</span>}
+              </div>
+
+              {taskOpen&&!taskDone&&(
+                <div style={{borderTop:`1px solid #CECBF6`,padding:"14px 16px",background:"rgba(255,255,255,0.65)"}}>
+                  <div style={{fontSize:10,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:8}}>Steps</div>
+                  {TODAY_TASK.steps.map((s,i)=>(
+                    <div key={i} style={{display:"flex",gap:10,marginBottom:6,alignItems:"flex-start"}}>
+                      <span style={{fontSize:10,fontWeight:500,color:PURPLE,minWidth:18,height:18,background:PURPLE_L,borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</span>
+                      <span style={{fontSize:13,color:"var(--color-text-primary)",lineHeight:1.55}}>{s}</span>
+                    </div>
+                  ))}
+                  <div style={{fontSize:10,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginTop:14,marginBottom:8}}>Prompt — paste into Claude Code</div>
+                  <div style={{background:"#1e293b",borderRadius:8,padding:"12px 14px",fontFamily:"var(--font-mono)",fontSize:11,color:"#e2e8f0",lineHeight:1.8,whiteSpace:"pre-wrap",marginBottom:8}}>{TODAY_TASK.prompt}</div>
+                  <div style={{display:"flex",gap:8,marginBottom:12}}>
+                    <button onClick={copy} style={{fontSize:11,fontWeight:500,color:copied?GREEN:PURPLE,background:copied?GREEN_L:PURPLE_L,border:`1px solid ${copied?"#C0DD97":"#CECBF6"}`,borderRadius:6,padding:"5px 14px",cursor:"pointer"}}>{copied?"Copied ✓":"Copy prompt"}</button>
+                  </div>
+                  <div style={{background:"rgba(255,255,255,0.8)",border:`1px solid #CECBF6`,borderRadius:8,padding:"9px 12px",marginBottom:12}}>
+                    <div style={{fontSize:10,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:3}}>Done when</div>
+                    <div style={{fontSize:12,color:"var(--color-text-secondary)",lineHeight:1.6}}>{TODAY_TASK.done}</div>
+                  </div>
+                  <button onClick={()=>{setTaskDone(true);setTaskOpen(false)}} style={{width:"100%",fontSize:13,fontWeight:500,color:"#fff",background:PURPLE,border:"none",borderRadius:8,padding:"10px",cursor:"pointer"}}>Mark as complete</button>
+                </div>
+              )}
+
+              <div style={{borderTop:`1px solid ${taskDone?"#C0DD97":"#CECBF6"}`,padding:"10px 16px",background:"rgba(255,255,255,0.35)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <span style={{fontSize:13,fontWeight:500,color:taskDone?GREEN:PURPLE_D}}>🔥 {streak} day task streak</span>
+                  {taskDone&&<span style={{fontSize:11,color:GREEN}}>new record</span>}
+                </div>
+                <div style={{display:"flex",gap:4}}>
+                  {TASK_HIST.map((t,i)=>{
+                    const done = t.done||(t.today&&taskDone);
+                    const isToday = t.today;
+                    return (
+                      <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                        <div style={{width:26,height:26,borderRadius:6,background:done?(isToday?PURPLE:"#3B6D11"):isToday?"#CECBF6":"var(--color-background-secondary)",border:`1px solid ${done?(isToday?"#7F77DD":"#97C459"):isToday?"#AFA9EC":"var(--color-border-tertiary)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:done?"#fff":"var(--color-text-tertiary)"}}>
+                          {done?"✓":""}
+                        </div>
+                        <span style={{fontSize:9,color:"var(--color-text-tertiary)"}}>{t.day}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div style={{marginTop:8,background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:10,overflow:"hidden"}}>
+              {TASK_HIST.map((t,i)=>(
+                <div key={i} style={{padding:"9px 14px",borderBottom:i<TASK_HIST.length-1?"0.5px solid var(--color-border-tertiary)":"none",display:"flex",justifyContent:"space-between",alignItems:"center",background:t.today?"var(--color-background-secondary)":"var(--color-background-primary)"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:t.today?500:400,color:"var(--color-text-primary)",marginBottom:1}}>{t.label}</div>
+                    <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{t.day}{t.today?" · Today":""}</div>
+                  </div>
+                  <div style={{flexShrink:0,marginLeft:12}}>
+                    {t.today&&!taskDone?<span style={{fontSize:10,fontWeight:500,color:PURPLE,background:PURPLE_L,padding:"2px 9px",borderRadius:20,border:`1px solid #CECBF6`}}>In progress</span>
+                    :(t.done||(t.today&&taskDone))?<span style={{fontSize:10,fontWeight:500,color:GREEN,background:GREEN_L,padding:"2px 9px",borderRadius:20,border:"1px solid #C0DD97"}}>✓ Done</span>
+                    :<span style={{fontSize:10,fontWeight:500,color:RED,background:RED_L,padding:"2px 9px",borderRadius:20,border:"1px solid #F7C1C1"}}>Missed</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{background:GREEN_L,border:"1px solid #97C459",borderRadius:12,padding:"14px 16px",marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:500,color:GREEN,textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:5}}>Win · best session of the day</div>
+            <div style={{fontSize:14,fontWeight:500,color:"var(--color-text-primary)",marginBottom:5}}>05:10am — cleanest debugging session in two weeks</div>
+            <div style={{fontSize:13,color:"#166534",lineHeight:1.7}}>The session on main.py — full stack trace, expected vs actual, two things already tried. Claude got it right in one response. Two weeks ago this same pattern took 4+ corrections.</div>
+          </div>
+
+          <div style={{background:AMBER_L,border:"1px solid #FAC775",borderRadius:10,padding:"10px 14px",display:"flex",gap:10,alignItems:"center"}}>
+            <span style={{fontSize:12,color:AMBER,fontWeight:500}}>⚠</span>
+            <span style={{fontSize:12,color:AMBER,lineHeight:1.6}}>No testing prompts in <strong>11 days</strong> across second-brain-plugin. You are shipping sync and embedding logic with no test coverage signal in any session.</span>
+          </div>
+        </div>
+      );
+    }
+
+    function InsightsView() {
+      const [filter,setFilter]=useState("All");
+      const types=["All",...new Set(INSIGHTS.map(i=>i.tag))];
+      const filtered=filter==="All"?INSIGHTS:INSIGHTS.filter(i=>i.tag===filter);
+      return (
+        <div>
+          <div style={{fontSize:22,fontWeight:500,color:"var(--color-text-primary)",letterSpacing:"-0.01em",marginBottom:4}}>Insights</div>
+          <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20}}>7 insights from yesterday · April 24, 2026</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+            {types.map(t=>(
+              <button key={t} onClick={()=>setFilter(t)} style={{fontSize:12,fontWeight:filter===t?500:400,padding:"5px 14px",borderRadius:20,background:filter===t?"var(--color-text-primary)":"var(--color-background-primary)",color:filter===t?"var(--color-background-primary)":"var(--color-text-secondary)",border:`0.5px solid ${filter===t?"var(--color-text-primary)":"var(--color-border-secondary)"}`,cursor:"pointer"}}>{t}</button>
+            ))}
+          </div>
+          {filtered.map((ins,i)=><InsightCard key={i} ins={ins} idx={INSIGHTS.indexOf(ins)}/>)}
+        </div>
+      );
+    }
+
+    function ProgressView() {
+      const [active,setActive]=useState("Prompt specificity");
+      const data=PROG_DATA[active];
+      const mn=Math.min(...data),mx=Math.max(...data),r=mx-mn||1;
+      const W=540,H=160,PL=36,PR=16,PT=16,PB=32;
+      const iW=W-PL-PR,iH=H-PT-PB;
+      const pts=data.map((v,i)=>({x:PL+(i/(data.length-1))*iW,y:PT+iH-((v-mn)/r)*iH,v}));
+      const poly=pts.map(p=>`${p.x},${p.y}`).join(" ");
+      const area=`M${pts[0].x},${PT+iH} `+pts.map(p=>`L${p.x},${p.y}`).join(" ")+` L${pts[pts.length-1].x},${PT+iH} Z`;
+      const improving=data[data.length-1]>data[0];
+      const col=improving?"#3B6D11":"#A32D2D";
+
+      return (
+        <div>
+          <div style={{fontSize:22,fontWeight:500,color:"var(--color-text-primary)",letterSpacing:"-0.01em",marginBottom:4}}>Progress</div>
+          <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20}}>Your improvement arc — last 6 weeks</div>
+
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+            {[{l:"Overall score",v:"3.8",s:"↑ from 2.1 six weeks ago",c:"#3B6D11"},{l:"Insights received",v:"38",s:"Across 6 weeks",c:PURPLE},{l:"Tasks completed",v:"12 / 18",s:"67% completion rate",c:AMBER}].map((m,i)=>(
+              <div key={i} style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:10,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:8}}>{m.l}</div>
+                <div style={{fontSize:22,fontWeight:500,color:m.c,marginBottom:2}}>{m.v}</div>
+                <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{m.s}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,padding:"16px 18px",marginBottom:16}}>
+            <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+              {Object.keys(PROG_DATA).map(k=>(
+                <button key={k} onClick={()=>setActive(k)} style={{fontSize:12,fontWeight:active===k?500:400,padding:"5px 14px",borderRadius:20,background:active===k?"var(--color-text-primary)":"var(--color-background-secondary)",color:active===k?"var(--color-background-primary)":"var(--color-text-secondary)",border:"0.5px solid var(--color-border-secondary)",cursor:"pointer"}}>{k}</button>
+              ))}
+            </div>
+            <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:"block"}}>
+              <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={col} stopOpacity="0.12"/><stop offset="100%" stopColor={col} stopOpacity="0"/></linearGradient></defs>
+              {[0,0.5,1].map((t,i)=><line key={i} x1={PL} y1={PT+iH*(1-t)} x2={PL+iW} y2={PT+iH*(1-t)} stroke="var(--color-border-tertiary)" strokeWidth="1"/>)}
+              <path d={area} fill="url(#ag)"/>
+              <polyline points={poly} fill="none" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              {pts.map((p,i)=>(
+                <g key={i}>
+                  <circle cx={p.x} cy={p.y} r={i===pts.length-1?5:3} fill={col} stroke="var(--color-background-primary)" strokeWidth="1.5"/>
+                  <text x={p.x} y={PT+iH+18} textAnchor="middle" fontSize="11" fill="var(--color-text-tertiary)">{WEEKS[i]}</text>
+                  {(i===0||i===pts.length-1)&&<text x={p.x+(i===0?8:-8)} y={p.y-8} fontSize="11" fill={col} fontWeight="500" textAnchor={i===0?"start":"end"}>{p.v}</text>}
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          <div style={{fontSize:10,fontWeight:500,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Tracked weaknesses</div>
+          {WEAKNESS.map(w=>{
+            const tc=w.trend==="improving"?"#3B6D11":w.trend==="regressing"?"#A32D2D":"#854F0B";
+            const tl=w.trend==="improving"?"↑ Improving":w.trend==="regressing"?"↓ Regressing":"→ Flat";
+            const sc=w.sev==="High"?"#A32D2D":w.sev==="Medium"?"#854F0B":"var(--color-text-tertiary)";
+            return (
+              <div key={w.id} style={{background:"var(--color-background-primary)",border:`0.5px solid ${w.active?PURPLE_M:"var(--color-border-tertiary)"}`,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+                    <span style={{fontSize:13,color:"var(--color-text-primary)"}}>{w.title}</span>
+                    {w.active&&<span style={{fontSize:10,fontWeight:500,padding:"1px 7px",borderRadius:10,background:PURPLE_L,color:PURPLE_D}}>Active</span>}
+                  </div>
+                  <div style={{display:"flex",gap:12}}>
+                    <span style={{fontSize:11,color:sc,fontWeight:500}}>{w.sev}</span>
+                    <span style={{fontSize:11,color:tc,fontWeight:500}}>{tl}</span>
+                  </div>
+                  {!w.active&&<button style={{marginTop:8,fontSize:11,fontWeight:500,color:PURPLE,background:PURPLE_L,border:`1px solid #CECBF6`,borderRadius:6,padding:"3px 12px",cursor:"pointer"}}>Make this my focus</button>}
+                </div>
+                <Spark d={w.d} trend={w.trend}/>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function AskView() {
+      const [msgs,setMsgs]=useState([{role:"sys",text:"Ask me anything about your coding sessions, prompt patterns, or progress. I have your full behavioral history."}]);
+      const [inp,setInp]=useState("");
+      const QUICK=["Which file causes most corrections?","Am I actually improving?","Worst session yesterday?","Top repeated prompts"];
+      
+      const send=t=>{
+        if(!t.trim())return;
+        setMsgs(m=>[...m,{role:"user",text:t.trim()}]);
+        setInp("");
+        setTimeout(()=>{
+          const q=t.toLowerCase();
+          let r="";
+          if(q.includes("file"))r="service.py is your highest-friction file — 40% of all corrections happen there. It appeared in 4 of yesterday's 6 sessions. embedder.py is second, mainly in complex multi-step sessions.";
+          else if(q.includes("improv"))r="Yes, measurably. Prompt specificity went from 2.1 to 3.8 over 6 weeks. Correction rate dropped from 5.2 to 2.8. Debugging prompts now average 47 words vs 18 six weeks ago. The trend is consistent.";
+          else if(q.includes("worst"))r="The 09:04 embedder.py session — 107 minutes, 23 prompts, 6 corrections. Root cause: starting implementation without a defined target state. Session ended without clean resolution.";
+          else r="Top repeated prompts this week: (1) 'raise a PR against development branch' — 9 times. (2) 'fetch PR comments and create a checklist' — 11 times in 2 weeks. (3) 'push to development branch' — 34 of 40 sessions. All three are slash command candidates.";
+          setMsgs(m=>[...m,{role:"ai",text:r}]);
+        },600);
+      };
+
+      return (
+        <div>
+          <div style={{fontSize:22,fontWeight:500,color:"var(--color-text-primary)",letterSpacing:"-0.01em",marginBottom:4}}>Ask</div>
+          <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:20}}>Your full behavioral history, queryable in plain language</div>
+          <div style={{background:"var(--color-background-primary)",border:"0.5px solid var(--color-border-tertiary)",borderRadius:12,padding:"14px",marginBottom:10,minHeight:260,maxHeight:380,overflowY:"auto"}}>
+            {msgs.map((m,i)=>(
+              <div key={i} style={{marginBottom:12}}>
+                {m.role==="sys"&&<div style={{fontSize:12,color:"var(--color-text-tertiary)",fontStyle:"italic",lineHeight:1.6,padding:"8px 12px",background:"var(--color-background-secondary)",borderRadius:8}}>{m.text}</div>}
+                {m.role==="user"&&<div style={{display:"flex",justifyContent:"flex-end"}}><div style={{background:PURPLE,color:"#fff",borderRadius:"10px 10px 2px 10px",padding:"8px 12px",fontSize:13,maxWidth:"82%",lineHeight:1.5}}>{m.text}</div></div>}
+                
+                {/* Completed the missing div segment from the prompt below */}
+                {m.role==="ai"&&<div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                  <div style={{width:26,height:26,borderRadius:13,background:PURPLE_L,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:PURPLE_D,fontWeight:600}}>AI</div>
+                  <div style={{background:"var(--color-background-secondary)",border:"1px solid var(--color-border-secondary)",color:"var(--color-text-primary)",borderRadius:"10px 10px 10px 2px",padding:"8px 12px",fontSize:13,maxWidth:"82%",lineHeight:1.5}}>{m.text}</div>
+                </div>}
+              </div>
+            ))}
+          </div>
+          
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+            {QUICK.map((q, i) => (
+              <button key={i} onClick={() => send(q)} style={{fontSize:11, background:PURPLE_L, color:PURPLE_D, border:"1px solid #CECBF6", borderRadius:12, padding:"4px 10px", cursor:"pointer"}}>
+                {q}
+              </button>
+            ))}
+          </div>
+          
+          <div style={{display:"flex",gap:8}}>
+            <input 
+              value={inp} 
+              onChange={e=>setInp(e.target.value)} 
+              onKeyDown={e=>e.key==="Enter"&&send(inp)} 
+              placeholder="Ask a question..." 
+              style={{flex:1, padding:"10px 14px", borderRadius:8, border:"1px solid var(--color-border-tertiary)", fontSize:14}}
+            />
+            <button onClick={()=>send(inp)} style={{background:PURPLE, color:"#fff", border:"none", borderRadius:8, padding:"0 16px", fontWeight:500, cursor:"pointer"}}>Send</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Main Layout Application Component
+    function App() {
+      const [currentView, setCurrentView] = useState("today");
+
+      return (
+        <div>
+          <div style={{display:"flex", gap:16, borderBottom:"1px solid var(--color-border-tertiary)", paddingBottom:12, marginBottom:24}}>
+            {NAV.map(n => (
+              <button key={n.id} onClick={() => setCurrentView(n.id)} style={{fontSize:14, fontWeight:currentView===n.id?600:400, color:currentView===n.id?PURPLE:"var(--color-text-secondary)", background:"none", border:"none", cursor:"pointer", padding:0, display:"flex", alignItems:"center", gap:6}}>
+                <span>{n.icon}</span>{n.label}
+              </button>
+            ))}
+          </div>
+          
+          {currentView === "today" && <TodayView />}
+          {currentView === "insights" && <InsightsView />}
+          {currentView === "progress" && <ProgressView />}
+          {currentView === "ask" && <AskView />}
+        </div>
+      );
+    }
+
+    // Initialize React
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

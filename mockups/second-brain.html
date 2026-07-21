@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Second Brain · Reflect. Improve. Ship better.</title>
+<style>
+:root{
+  --bg:#ffffff; --main:#fafafa; --fg:#09090b; --primary:#18181b; --muted:#71717a; --muted2:#a1a1aa;
+  --border:#e4e4e7; --border-md:#d4d4d8; --border-soft:#f0f0f2; --mutedbg:#f4f4f5; --card:#ffffff;
+  --ok:#047857; --ok-bg:#ecfdf5; --ok-bd:#a7f3d0;
+  --dev:#b45309; --dev-bg:#fffbeb; --dev-bd:#fde68a;
+  --weak:#b91c1c; --weak-bg:#fef2f2; --weak-bd:#fecaca;
+  --sh-xs:0 1px 2px rgba(0,0,0,.05); --sh-sm:0 2px 8px rgba(0,0,0,.06);
+  --sh-menu:0 10px 38px -10px rgba(0,0,0,.18),0 10px 20px -15px rgba(0,0,0,.12);
+  --sans:'Geist','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --mono:'Geist Mono','JetBrains Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+  --r:10px; --r-lg:14px;
+  /* semantic accents shared by the Daily Insights view */
+  --accent:#dc2626; --accent-bg:#fef2f2;
+  --accent-2:#059669; --accent-2-bg:#ecfdf5;
+  --amber:#f59e0b; --amber-bg:#fffbeb;
+  --purple:#4f46e5; --purple-bg:#eef2ff;
+  --teal:#0d9488; --teal-bg:#f0fdfa;
+  --blue:#3b82f6; --blue-bg:#eff6ff;
+  /* legacy token aliases used by inline styles in the insights view */
+  --surface:#ffffff; --surface-2:#f4f4f5;
+  --text-primary:#09090b; --text-secondary:#52525b; --text-tertiary:#71717a;
+  --font-display:var(--sans); --font-body:var(--sans);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--fg);background:var(--bg);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select{font:inherit}
+.app{display:grid;grid-template-columns:260px 1fr;height:100vh}
+/* ---------- sidebar shell ---------- */
+.side{border-right:1px solid var(--border);background:var(--bg);display:flex;flex-direction:column;padding:16px 12px;gap:4px}
+.brand{display:flex;gap:10px;align-items:center;padding:6px 8px 16px}
+.brand .mark{width:28px;height:28px;border-radius:8px;background:var(--primary);display:grid;place-items:center;flex:none}
+.brand .mark svg{width:16px;height:16px;stroke:#fff}
+.brand b{font-size:14px;font-weight:600;display:block;line-height:1.2}
+.brand span{font-size:11px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nit{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--muted);width:100%;text-align:left}
+.nit svg{width:16px;height:16px;flex:none;stroke:currentColor}
+.nit:hover{background:var(--mutedbg);color:var(--fg)}
+.nit.on{background:var(--primary);color:#fff}
+.nit .cnt{margin-left:auto;font-size:11px;font-weight:600;background:var(--mutedbg);color:var(--muted);border-radius:9999px;padding:1px 8px}
+.nit.on .cnt{background:rgba(255,255,255,.15);color:#fff}
+.side .sp{flex:1}
+.uf{display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid var(--border-soft);position:relative}
+.uf .av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#18181b,#52525b);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+.uf b{font-size:13px;font-weight:600;display:block;line-height:1.2}
+.uf span{font-size:11px;color:var(--muted)}
+.uf .kebab{margin-left:auto;color:var(--muted);padding:6px;border-radius:6px}
+.uf .kebab:hover{background:var(--mutedbg)}
+.umenu{position:absolute;bottom:54px;right:4px;width:200px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh-menu);padding:6px;display:none;z-index:30}
+.umenu.open{display:block}
+.umenu .uh{padding:8px 10px;border-bottom:1px solid var(--border-soft);margin-bottom:4px}
+.umenu .uh b{font-size:13px}.umenu .uh span{font-size:11px;color:var(--muted);display:block}
+.umenu button{display:block;width:100%;text-align:left;padding:7px 10px;border-radius:7px;font-size:13px}
+.umenu button:hover{background:var(--mutedbg)}
+.umenu button.danger:hover{background:var(--weak-bg);color:var(--weak)}
+/* ---------- main shell ---------- */
+.main{background:var(--main);overflow-y:auto;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:12px;padding:0 32px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.crumb{font-size:13px;color:var(--muted)}
+.crumb b{color:var(--fg);font-weight:600}
+.topbar .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg);border-radius:9999px;padding:5px 12px;color:var(--fg)}
+.chip.ghost{border-color:transparent;background:var(--mutedbg);color:var(--muted)}
+.chip.streak{background:var(--dev-bg);color:var(--dev);border-color:var(--dev-bd)}
+.content{padding:32px;max-width:1180px;width:100%;margin:0 auto}
+.phead{margin-bottom:22px}
+.phead h1{font-size:28px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.phead .sub{font-size:14px;color:var(--muted);margin-top:4px}
+.phead .row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.phead .row .grow{flex:1;min-width:260px}
+/* section head (shared) */
+.sect{margin:26px 0 12px}
+.sect h2{font-size:17px;font-weight:600}
+.sect p{font-size:13px;color:var(--muted)}
+/* status pill */
+.lvl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:3px 10px;flex:none;border:1px solid}
+.lvl .dots{display:inline-flex;gap:2px}
+.lvl .dots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.25}
+.lvl.strong{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-bd)}
+.lvl.strong .dots i{opacity:1}
+.lvl.developing{color:var(--dev);background:var(--dev-bg);border-color:var(--dev-bd)}
+.lvl.developing .dots i:nth-child(-n+2){opacity:1}
+.lvl.weak{color:var(--weak);background:var(--weak-bg);border-color:var(--weak-bd)}
+.lvl.weak .dots i:first-child{opacity:1}
+.bt{font-size:12px;font-weight:600;border-radius:8px;padding:7px 13px;border:1px solid var(--border);background:var(--bg)}
+.bt:hover{background:var(--mutedbg)}
+.bt.dark{background:var(--primary);color:#fff;border-color:var(--primary)}
+.bt.dark:hover{opacity:.9}
+/* filters (donor views) */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}
+.fchip{font-size:12.5px;font-weight:500;border:1px solid var(--border);background:var(--bg);border-radius:9999px;padding:6px 14px;color:var(--muted)}
+.fchip:hover{color:var(--fg)}
+.fchip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.fchip .c{opacity:.65;margin-left:4px}
+/* intelligence grid */
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--sh-xs);cursor:pointer;transition:box-shadow .15s,transform .15s;display:flex;flex-direction:column;gap:8px}
+.dcard:hover{box-shadow:var(--sh-sm);transform:translateY(-1px)}
+.dcard .nm{font-size:14.5px;font-weight:600;line-height:1.35}
+.dcard .ds{font-size:12.5px;color:var(--muted);line-height:1.5;flex:1}
+.dcard .op{font-size:12px;font-weight:600;color:var(--fg)}
+/* detail */
+.back{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:14px;display:inline-flex;gap:6px;align-items:center}
+.back:hover{color:var(--fg)}
+.hero{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--sh-xs);margin-bottom:16px}
+.hero .eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;display:flex;gap:10px;align-items:center}
+.hero h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+.hero .ds{font-size:13.5px;color:var(--muted);max-width:70ch}
+.coach{margin-top:16px;border-radius:12px;background:linear-gradient(135deg,#fafaf9,#f5f5f4);border:1px solid var(--border);border-left:3px solid var(--primary);padding:14px 16px}
+.coach .cl{display:inline-flex;gap:6px;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.05em;background:var(--primary);color:#fff;border-radius:9999px;padding:3px 10px;margin-bottom:8px}
+.coach p{font-size:13.5px;line-height:1.6;color:var(--fg)}
+.dstack{display:grid;gap:14px}
+.dbox{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--sh-xs)}
+.dbox h3{font-size:14.5px;font-weight:600;margin-bottom:12px}
+.steps{display:grid;gap:10px}
+.step{display:flex;gap:12px;font-size:13px;color:var(--fg);line-height:1.5}
+.step .n{width:22px;height:22px;border-radius:7px;background:var(--mutedbg);color:var(--muted);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+.proof{display:grid;gap:8px}
+.pq{border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:background .1s}
+.pq:hover{background:var(--mutedbg)}
+.pq .pm{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;gap:10px}
+.pq .pm b{color:var(--fg)}
+.pq .pt{font-size:12.5px;color:var(--fg)}
+.tips{display:grid;gap:8px}
+.tip{display:flex;gap:10px;font-size:13px;align-items:flex-start}
+.tip svg{width:14px;height:14px;flex:none;margin-top:3px;color:var(--ok)}
+/* sessions table */
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-xs);overflow:hidden}
+.toolrow{display:flex;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border-soft);flex-wrap:wrap}
+.search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:9px;padding:8px 12px;background:var(--bg)}
+.search svg{width:14px;height:14px;color:var(--muted);flex:none}
+.search input{border:0;outline:0;width:100%;font-size:13px;background:transparent;color:var(--fg)}
+.sel{border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--fg);background:var(--bg)}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:#fcfcfd;white-space:nowrap}
+td{padding:13px 16px;border-bottom:1px solid var(--border-soft);font-size:13px;vertical-align:middle}
+tr.srow{cursor:pointer}
+tr.srow:hover td{background:#fafafa}
+tr:last-child td{border-bottom:0}
+td .sid{font-family:var(--mono);font-size:12px;color:var(--muted)}
+td .snm{font-weight:500;color:var(--fg)}
+td .sdt{font-size:11.5px;color:var(--muted)}
+td .stg{display:inline-flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.mini{font-size:10px;font-weight:600;border-radius:5px;padding:1px 7px;background:var(--mutedbg);color:var(--muted)}
+.mini.clean{background:var(--ok-bg);color:var(--ok)}
+.mini.heavy{background:var(--dev-bg);color:var(--dev)}
+.mini.l4,.mini.l5{background:#eef2ff;color:#4338ca}
+td .tool{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+td .tool i{width:7px;height:7px;border-radius:50%;flex:none}
+td .num{font-variant-numeric:tabular-nums}
+.outc{font-size:12px;font-weight:600}
+.outc.m{color:var(--ok)}.outc.d{color:var(--muted)}.outc.a{color:var(--weak)}
+/* session detail */
+.statrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));border:1px solid var(--border);border-radius:14px;background:var(--card);box-shadow:var(--sh-xs);overflow:hidden;margin:16px 0}
+.statrow>div{padding:16px 18px;border-right:1px solid var(--border-soft)}
+.statrow>div:last-child{border-right:0}
+.statrow .lb{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.statrow .vl{font-size:16px;font-weight:600}
+.statrow .sb2{font-size:11.5px;color:var(--muted);margin-top:2px}
+.intel-chips{display:flex;gap:8px;flex-wrap:wrap}
+.ic2{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--bg);border-radius:9999px;padding:6px 6px 6px 13px;font-size:12.5px;font-weight:500;cursor:pointer}
+.ic2:hover{background:var(--mutedbg)}
+.trace{position:relative;padding-left:22px;margin-top:8px}
+.trace::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;border-left:2px dashed var(--border)}
+.tstamp{font-family:var(--mono);font-size:11px;color:var(--muted);margin:14px 0 8px;position:relative}
+.tstamp::before{content:"";position:absolute;left:-19px;top:3px;width:8px;height:8px;border-radius:50%;background:var(--muted2)}
+.turn{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
+.turn .th2{display:flex;gap:10px;align-items:center;margin-bottom:7px}
+.turn .who{font-size:11px;font-weight:700;letter-spacing:.05em}
+.turn .who.you{color:#1d4ed8}.turn .who.ai{color:var(--fg)}
+.turn .tt2{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.turn p{font-size:13px;line-height:1.55;color:var(--fg)}
+.turn .fl2{margin-left:auto}
+.turn .note{margin-top:9px;border-top:1px dashed var(--border-soft);padding-top:8px;font-size:12px;color:var(--muted)}
+.turn .note b{color:var(--fg)}
+.turn .worked{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--mutedbg);border:1px solid var(--border-soft);border-radius:7px;padding:5px 9px;margin:9px 0}
+.turn.hl{border-color:var(--primary);box-shadow:0 0 0 3px rgba(24,24,27,.08)}
+.turn.hl .worked{background:#fcfcfd}
+.hl-flag{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--primary);border-radius:9999px;padding:2px 9px;flex:none}
+/* library */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.lcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--sh-xs);display:flex;flex-direction:column;gap:10px}
+.lcard .lt{display:flex;align-items:center;gap:10px}
+.lcard .lt b{font-size:14px;font-weight:600;flex:1}
+.uses{font-size:10.5px;font-weight:700;border-radius:9999px;padding:2px 9px}
+.uses.g{background:var(--ok-bg);color:var(--ok)}
+.uses.n{background:var(--primary);color:#fff}
+.lcard pre{font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--fg);background:#fafafa;border:1px solid var(--border-soft);border-radius:9px;padding:11px 13px;white-space:pre-wrap;flex:1}
+.lcard .lf{display:flex;align-items:center;font-size:11.5px;color:var(--muted)}
+.lcard .lf .bt{margin-left:auto}
+/* team view */
+.aggrow{padding:14px 18px;border-bottom:1px solid var(--border-soft);display:grid;grid-template-columns:1fr 220px 70px;gap:16px;align-items:center}
+.aggrow:last-child{border-bottom:0}
+.aggrow .al b{font-size:13.5px;font-weight:600;display:block}
+.aggrow .al span{font-size:11.5px;color:var(--muted)}
+.aggrow .bar{height:8px;border-radius:9999px;background:var(--mutedbg);overflow:hidden}
+.aggrow .bar i{display:block;height:100%;border-radius:9999px;background:var(--primary)}
+.aggrow .an{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right}
+.lockrow{display:flex;align-items:center;gap:10px;padding:13px 18px;background:#fcfcfd;border-top:1px dashed var(--border);font-size:12.5px;color:var(--muted)}
+.lockrow svg{width:14px;height:14px;flex:none}
+.lockrow .dead{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--muted2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:not-allowed;opacity:.7}
+/* empty state */
+.empty{display:grid;place-items:center;text-align:center;padding:64px 24px}
+.empty .ic{width:48px;height:48px;border-radius:14px;background:var(--mutedbg);display:grid;place-items:center;margin:0 auto 16px}
+.empty .ic svg{width:24px;height:24px;color:var(--muted2)}
+.empty b{font-size:15px;display:block;margin-bottom:6px}
+.empty p{font-size:13px;color:var(--muted);max-width:46ch;margin:0 auto 16px;line-height:1.55}
+/* weekly view */
+.wktbl{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-xs);overflow:hidden;margin-bottom:22px}
+.wktbl .wh{padding:12px 18px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--muted)}
+.wktbl table{width:100%;border-collapse:collapse}
+.wktbl th{font-size:11px;font-weight:600;color:var(--muted);text-align:left;padding:9px 14px;background:#fcfcfd;border-bottom:1px solid var(--border)}
+.wktbl td{padding:11px 14px;border-bottom:1px solid var(--border-soft);font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.wktbl tr:last-child td{border-bottom:0}
+.wktbl td:first-child{font-weight:600;color:var(--fg)}
+.wktbl td b{color:var(--fg);font-weight:600}
+.wktbl .good{color:var(--ok);font-weight:600}
+.wktbl .bad{color:var(--weak);font-weight:600}
+.wktbl .tr-note{font-weight:600}
+.sparkrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:22px}
+.sparkcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:var(--sh-xs)}
+.sparkcard .lb{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.sparkcard .val{font-size:26px;font-weight:600;margin:6px 0 8px}
+.spark{display:flex;gap:4px;align-items:flex-end;height:38px}
+.spark i{flex:1;border-radius:3px 3px 0 0;background:var(--mutedbg)}
+.spark i.hi{background:var(--primary)}
+.decreg{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-xs);overflow:hidden}
+.decrow{display:flex;gap:12px;align-items:baseline;padding:13px 18px;border-bottom:1px solid var(--border-soft)}
+.decrow:last-child{border-bottom:0}
+.decrow .dd{font-family:var(--mono);font-size:10.5px;color:var(--muted);flex:none;width:56px}
+.decrow .dt2{flex:1;font-size:13.5px;color:var(--fg)}
+.decrow .dt2 small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+.decrow .new{font-size:10px;font-weight:700;color:var(--ok);background:var(--ok-bg);border-radius:9999px;padding:2px 8px;flex:none}
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--primary);color:#fff;font-size:13px;font-weight:500;border-radius:10px;padding:10px 18px;box-shadow:var(--sh-menu);transition:transform .25s;z-index:50}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+
+/* ══════════ DAILY INSIGHTS (AI-Coach home) ══════════ */
+.date-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-tertiary);background:var(--surface-2);padding:4px 10px;border-radius:20px;margin-bottom:18px}
+.greeting{font-size:28px;font-weight:600;letter-spacing:-.02em;color:var(--text-primary);margin-bottom:4px;line-height:1.2}
+.greeting span{color:var(--text-primary)}
+.greeting-sub{font-size:13.5px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+.home-grid{display:grid;grid-template-columns:1fr 320px;gap:20px}
+/* summary strip */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--sh-xs)}
+.stat-label{font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--text-primary);line-height:1;margin-bottom:5px}
+.stat-delta{font-size:11px;color:var(--ok);font-weight:500}
+.stat-delta.down{color:var(--weak)}
+/* section header */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-size:16px;font-weight:600;letter-spacing:-.01em;color:var(--text-primary)}
+.section-title span{font-weight:600}
+.section-link{font-size:12px;color:var(--text-tertiary);cursor:pointer;text-decoration:none;transition:color .12s}
+.section-link:hover{color:var(--text-primary)}
+/* filter chips */
+.filter-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-family:var(--sans);transition:all .12s}
+.filter-chip:hover{background:var(--surface-2);color:var(--text-primary)}
+.filter-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.filter-chip.active .cat-dot{box-shadow:0 0 0 1.5px rgba(255,255,255,.6)}
+.cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
+/* insight cards */
+.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;box-shadow:var(--sh-xs);transition:box-shadow .15s,border-color .15s;cursor:pointer}
+.insight-card:hover{box-shadow:var(--sh-sm);border-color:var(--border-md)}
+.card-header{display:flex;align-items:center;gap:10px;padding:14px 16px 12px}
+.severity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sev-high{background:#dc2626}
+.sev-mid{background:#f59e0b}
+.sev-low{background:#059669}
+.sev-info{background:#3b82f6}
+.card-cat-tag{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-tertiary);flex:1}
+.card-severity-label{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
+.sev-label-high{background:var(--weak-bg);color:var(--weak)}
+.sev-label-mid{background:var(--dev-bg);color:var(--dev)}
+.sev-label-low{background:var(--ok-bg);color:var(--ok)}
+.sev-label-info{background:var(--blue-bg);color:#1d4ed8}
+.card-body{padding:0 16px 14px}
+.card-headline{font-size:14px;font-weight:500;color:var(--text-primary);line-height:1.45;margin-bottom:6px}
+.card-evidence{font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px}
+.card-evidence strong{color:var(--text-primary);font-weight:600}
+.card-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.action-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text-primary);transition:all .12s;font-family:var(--sans)}
+.action-chip:hover{background:var(--mutedbg)}
+.action-chip.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.action-chip.primary:hover{opacity:.9}
+.chip-dismiss{margin-left:auto;padding:5px 8px;border-radius:6px;font-size:11px;color:var(--text-tertiary);cursor:pointer;border:none;background:none;font-family:var(--sans);transition:color .12s}
+.chip-dismiss:hover{color:var(--text-primary)}
+/* expanded card */
+.card-expanded{display:none}
+.card-expanded.open{display:block}
+.card-expand-body{border-top:1px solid var(--border-soft);padding:14px 16px;background:#fcfcfd}
+.expand-label{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px}
+.code-block{background:#fafafa;border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-family:var(--mono);font-size:12px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap;margin-bottom:10px;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--text-secondary);font-family:var(--sans);transition:all .12s}
+.copy-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.steps-list li{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--text-secondary);line-height:1.5}
+.step-num{width:18px;height:18px;border-radius:6px;background:var(--mutedbg);color:var(--muted);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+/* evidence receipt (expanded insight cards) */
+.evi-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.evi-chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--bg);border-radius:9999px;padding:4px 11px;color:var(--fg);cursor:pointer;transition:all .12s}
+.evi-chip:hover{background:var(--mutedbg);border-color:var(--border-md)}
+.evi-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+.evi-turn{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.evi-quote{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-primary);background:#fafafa;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:9px;padding:10px 13px;margin-bottom:10px;white-space:pre-wrap}
+.evi-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+/* right rail panels */
+.sidebar-right{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-xs)}
+.panel-header{padding:14px 16px 10px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:7px}
+.panel-count{background:var(--mutedbg);border:1px solid var(--border);color:var(--text-secondary);font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px}
+.task-item{padding:12px 16px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .1s}
+.task-item:last-child{border-bottom:none}
+.task-item:hover{background:#fcfcfd}
+.task-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+.task-checkbox{width:15px;height:15px;border:1.5px solid var(--border-md);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer}
+.task-checkbox.done{background:var(--accent-2);border-color:var(--accent-2)}
+.task-name{font-size:13px;font-weight:500;color:var(--text-primary);line-height:1.4;flex:1}
+.task-time{font-size:11px;color:var(--text-tertiary);white-space:nowrap;flex-shrink:0}
+.task-meta{display:flex;align-items:center;gap:6px;padding-left:23px}
+.task-from{font-size:11px;color:var(--text-tertiary)}
+.task-impact{font-size:11px;color:var(--ok);font-weight:500}
+/* library quick panel */
+.playbook-item{padding:10px 16px;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .1s}
+.playbook-item:last-child{border-bottom:none}
+.playbook-item:hover{background:#fcfcfd}
+.playbook-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.playbook-info{flex:1;min-width:0}
+.playbook-name{font-size:12.5px;font-weight:500;color:var(--text-primary)}
+.playbook-uses{font-size:11px;color:var(--text-tertiary);margin-top:1px}
+.playbook-copy{font-size:11px;color:var(--text-secondary);cursor:pointer;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-family:var(--sans);transition:all .12s;font-weight:500}
+.playbook-copy:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* sparkline (This Week panel) */
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:32px}
+.spark-bar{flex:1;border-radius:2px 2px 0 0;min-height:4px;transition:opacity .2s}
+.spark-bar:hover{opacity:.7}
+/* intelligence category hub cards */
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.hub-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;box-shadow:var(--sh-xs);transition:box-shadow .15s,border-color .15s}
+.hub-card:hover{box-shadow:var(--sh-sm);border-color:var(--border-md)}
+.hub-card-header{padding:16px 18px 12px;display:flex;align-items:flex-start;gap:12px}
+.hub-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hub-icon svg{width:18px;height:18px}
+.hub-card-info{flex:1}
+.hub-card-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:3px}
+.hub-card-sub{font-size:12px;color:var(--text-tertiary)}
+.hub-card-body{padding:0 18px 16px;border-top:1px solid var(--border-soft)}
+.hub-stats{display:flex;gap:16px;padding:12px 0 10px}
+.hub-stat{flex:1}
+.hub-stat-val{font-size:18px;font-weight:600;letter-spacing:-.01em;color:var(--text-primary);line-height:1;font-variant-numeric:tabular-nums}
+.hub-stat-label{font-size:11px;color:var(--text-tertiary);margin-top:3px}
+.trend-bar{display:flex;align-items:center;gap:2px;height:28px;margin-bottom:8px}
+.trend-seg{flex:1;border-radius:2px;transition:opacity .2s}
+.trend-seg:hover{opacity:.7}
+.hub-latest{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;justify-content:space-between}
+.hub-trend-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.trend-up{background:var(--ok-bg);color:var(--ok)}
+.trend-watch{background:var(--dev-bg);color:var(--dev)}
+.trend-flat{background:var(--mutedbg);color:var(--muted)}
+@media(max-width:980px){.home-grid{grid-template-columns:1fr}.summary-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:860px){.app{grid-template-columns:1fr}.side{display:none}.aggrow{grid-template-columns:1fr 70px}.aggrow .bar{display:none}}
+
+/* --- added: mockup label, collapsible evidence, compact trace --- */
+.mockup-bar{display:flex;align-items:center;justify-content:center;gap:7px;font-size:11.5px;color:var(--text-tertiary);background:var(--mutedbg);border-bottom:1px solid var(--border-soft);padding:6px 12px}
+.mockup-bar b{color:var(--text-secondary);font-weight:700}
+.evi-disc{display:flex;align-items:center;gap:7px;width:100%;text-align:left;background:none;border:0;padding:2px 0 8px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-tertiary);cursor:pointer;font-family:var(--sans)}
+.evi-disc:hover{color:var(--text-secondary)}
+.evi-chev{display:inline-block;transition:transform .15s;font-size:11px}
+.evi-disc.open .evi-chev{transform:rotate(90deg)}
+.evi-body{display:none}
+.evi-body.open{display:block}
+.turn-more{background:none;border:0;color:var(--primary);font-size:11.5px;font-weight:600;cursor:pointer;padding:3px 0;font-family:var(--sans)}
+.turn-more:hover{text-decoration:underline}
+.turn-rest{display:none}
+.turn-rest.open{display:block}
+.card-expand-body{padding:12px 16px}
+
+/* --- redesigned insight cards: clear affordance, decluttered expand --- */
+.insight-card{cursor:pointer}
+.card-expanded{display:none}
+.insight-card.expanded .card-expanded{display:block}
+.card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.expand-cue{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--primary)}
+.expand-cue::after{content:"View evidence"}
+.insight-card.expanded .expand-cue::after{content:"Hide evidence"}
+.expand-cue .chev{display:block;transition:transform .18s}
+.insight-card.expanded .expand-cue .chev{transform:rotate(180deg)}
+.chip-dismiss{margin-left:0}
+.evi-head{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px}
+.card-expand-body{padding:14px 16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- sidebar -->
+  <aside class="side">
+    <div class="brand">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9.5 2a3.5 3.5 0 0 0-3.4 4.4A4 4 0 0 0 4 13.5a4 4 0 0 0 2.5 6.9A3.5 3.5 0 0 0 13 21V4.5A2.5 2.5 0 0 0 9.5 2zM14.5 2a3.5 3.5 0 0 1 3.4 4.4A4 4 0 0 1 20 13.5a4 4 0 0 1-2.5 6.9A3.5 3.5 0 0 1 11 21"/></svg></span>
+      <div><b>My Second Brain</b><span>Reflect. Improve. Ship better.</span></div>
+    </div>
+    <nav class="nav">
+      <button class="nit" data-nav="insights"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>Daily Insights<span class="cnt">7</span></button>
+      <button class="nit" data-nav="intelligences"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2l2.4 4.9L20 8l-4 3.9.9 5.6L12 14.8 7.1 17.5 8 11.9 4 8l5.6-1.1z"/></svg>Intelligences<span class="cnt">25</span></button>
+      <button class="nit" data-nav="sessions"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 9l2 2-2 2M12 13h4"/></svg>Sessions<span class="cnt">13</span></button>
+      <button class="nit" data-nav="library"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>Library<span class="cnt">6</span></button>
+      <button class="nit" data-nav="weekly"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>Weekly<span class="cnt">NEW</span></button>
+      <button class="nit" data-nav="team"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Team patterns<span class="cnt" style="font-size:9.5px">LEAD</span></button>
+    </nav>
+    <div class="sp"></div>
+    <div class="uf">
+      <span class="av">SP</span>
+      <div><b>Sneh Patel</b><span>sneh@acme.dev</span></div>
+      <button class="kebab" id="kebab" aria-label="User menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+      <div class="umenu" id="umenu">
+        <div class="uh"><b>Sneh Patel</b><span>sneh@acme.dev</span></div>
+        <button onclick="toast('Profile · not part of this mockup')">Profile</button>
+        <button onclick="toast('Organization settings · not part of this mockup')">Organization settings</button>
+        <button class="danger" onclick="toast('Logged out (mock)')">Log out</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- main -->
+  <div class="main"><div class="mockup-bar"><b>Mockup.</b> Recreated from the actual live production UI, with dummy data.</div>
+    <div class="topbar">
+      <span class="crumb">My Second Brain / <b id="crumb">Daily Insights</b></span>
+      <div class="right">
+        <span class="chip streak"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1c0 0-5 3.5-5 8a5 5 0 0010 0c0-4.5-5-8-5-8z"/></svg>12-day streak</span>
+        <span class="chip ghost">📅 Today · May 12, 2026</span>
+        <button class="bt dark" onclick="toast('Digest link copied. Share it with your lead')">Share digest</button>
+      </div>
+    </div>
+    <div class="content" id="content">
+
+      <!-- ══ VIEW: DAILY INSIGHTS (static, from AI-Coach) ══ -->
+      <div id="view-insights">
+        <div class="date-chip">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="11" rx="1" stroke="currentColor" fill="none" stroke-width="1.2"/><path d="M5 1v3M11 1v3M2 7h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Today's briefing · May 12, 2026
+        </div>
+
+        <div class="greeting">Good morning, <span>Sneh.</span></div>
+        <div class="greeting-sub">Yesterday: 4 sessions · 3.2 hrs · 47 prompts. Your coach found 7 things worth your attention.</div>
+
+        <!-- STATS -->
+        <div class="summary-strip">
+          <div class="stat-card">
+            <div class="stat-label">Sessions</div>
+            <div class="stat-value">4</div>
+            <div class="stat-delta">↑ +1 vs avg</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Correction Rate</div>
+            <div class="stat-value">3.4</div>
+            <div class="stat-delta down">↑ above 2.1 avg</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Best Session</div>
+            <div class="stat-value">12m</div>
+            <div class="stat-delta">Config fix · 3 turns</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Prompts Saved</div>
+            <div class="stat-value">3</div>
+            <div class="stat-delta">to library</div>
+          </div>
+        </div>
+
+        <div class="home-grid">
+          <!-- LEFT: INSIGHTS -->
+          <div>
+            <div class="section-header">
+              <div class="section-title">Today's <span>Insights</span></div>
+              <div class="filter-row" style="margin:0" id="sevchips">
+                <button class="filter-chip active" onclick="filterCards('all', this)">All 7</button>
+                <button class="filter-chip" onclick="filterCards('high', this)"><span class="cat-dot" style="background:#dc2626"></span>High</button>
+                <button class="filter-chip" onclick="filterCards('mid', this)"><span class="cat-dot" style="background:#f59e0b"></span>Mid</button>
+                <button class="filter-chip" onclick="filterCards('low', this)"><span class="cat-dot" style="background:#059669"></span>Wins</button>
+              </div>
+            </div>
+
+            <div class="filter-row" id="catchips">
+              <button class="filter-chip active" onclick="filterCat('all', this)"><span class="cat-dot" style="background:var(--fg)"></span>All categories</button>
+              <button class="filter-chip" onclick="filterCat('prompting', this)"><span class="cat-dot" style="background:#4f46e5"></span>Prompting <span style="opacity:.6">2</span></button>
+              <button class="filter-chip" onclick="filterCat('session', this)"><span class="cat-dot" style="background:#dc2626"></span>Session Efficiency <span style="opacity:.6">1</span></button>
+              <button class="filter-chip" onclick="filterCat('skill', this)"><span class="cat-dot" style="background:#059669"></span>Skill &amp; Domain <span style="opacity:.6">1</span></button>
+              <button class="filter-chip" onclick="filterCat('cognitive', this)"><span class="cat-dot" style="background:#f59e0b"></span>Cognitive <span style="opacity:.6">1</span></button>
+              <button class="filter-chip" onclick="filterCat('blindspot', this)"><span class="cat-dot" style="background:#3b82f6"></span>Blind Spots <span style="opacity:.6">1</span></button>
+              <button class="filter-chip" onclick="filterCat('knowledge', this)"><span class="cat-dot" style="background:#0d9488"></span>Knowledge <span style="opacity:.6">1</span></button>
+            </div>
+
+            <!-- CARD 1 -->
+            <div class="insight-card expanded" data-sev="high" data-cat="session" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-high"></div>
+                <div class="card-cat-tag">Session Efficiency</div>
+                <div class="card-severity-label sev-label-high">High Impact</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">You spent 47 minutes in a correction loop on auth middleware: a constraint was missing from your first prompt.</div>
+                <div class="card-evidence">Original ask had <strong>no mention of session token format</strong>. Claude suggested a generic approach. 8 turns of correction followed. Your average session resolves in <strong>19 minutes.</strong></div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('acme-auth','1')"><span class="dot"></span>session · acme-auth · Mon 09:14</button>
+                    <span class="evi-turn">turn 1 of 9</span>
+                  </div>
+                  <div class="evi-quote">"add auth middleware to the payments routes so only logged in users can hit them"</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('acme-auth','1')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                  
+                  
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 2 -->
+            <div class="insight-card" data-sev="mid" data-cat="prompting" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-mid"></div>
+                <div class="card-cat-tag">Prompting Intelligence</div>
+                <div class="card-severity-label sev-label-mid">Quick Win</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">You re-explained your stack setup 5 times this week, ~340 words each time. This belongs in CLAUDE.md, not your prompts.</div>
+                <div class="card-evidence">Mon <strong>3×</strong> · Tue <strong>1×</strong> · Wed <strong>1×</strong>. Avg 340 words per re-explanation. Estimated time cost this week: <strong>~18 minutes.</strong></div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('sports-brain-ctx','1')"><span class="dot"></span>session · sports-brain · Mon 17:05</button>
+                    <span class="evi-turn">turn 1 of 3</span>
+                  </div>
+                  <div class="evi-quote">"context first, same as always: python backend managed with uv, service level envs, postgres for state, opensearch for search, livekit for voice, react frontend that talks to the gateway only, never the api directly, no co-authored-by on commits. now the actual problem: the voice service times out behind the gateway after 30 seconds on long answers."</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('sports-brain-ctx','1')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                  
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 3 -->
+            <div class="insight-card" data-sev="mid" data-cat="cognitive" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-mid"></div>
+                <div class="card-cat-tag">Cognitive Style</div>
+                <div class="card-severity-label sev-label-mid">Pattern Spotted</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">In 4 sessions this week you committed to an approach before asking for alternatives; 3 of those had mid-session reversals.</div>
+                <div class="card-evidence">Compound prompt → immediate implementation ask → reversal at turn 4–6. Your exploration-first sessions average <strong>1.8 corrections</strong> vs 5.2 for commitment-first.</div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('acme-payments','2')"><span class="dot"></span>session · acme-payments · Mon 11:02</button>
+                    <span class="evi-turn">turn 2 of 8</span>
+                  </div>
+                  <div class="evi-quote">"no need, go with a denormalized totals column. add it to the ledger schema and start the migration now."</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('acme-payments','2')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 4 · POSITIVE -->
+            <div class="insight-card" data-sev="low" data-cat="skill" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-low"></div>
+                <div class="card-cat-tag">Skill &amp; Domain</div>
+                <div class="card-severity-label sev-label-low">Momentum</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">Your RAG sessions dropped from 6 corrections/session to 2 this week. What you changed is working. Here's the pattern.</div>
+                <div class="card-evidence">Weeks 1–3 avg: <strong>5.8 corrections</strong>. This week: <strong>2.1</strong>. You started loading chunk size + overlap constraints upfront. That's the difference.</div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('sports-brain','1')"><span class="dot"></span>session · sports-brain · Apr 30 15:40</button>
+                    <span class="evi-turn">turn 1 of 6</span>
+                  </div>
+                  <div class="evi-quote">"build the retriever for match transcript q&amp;a. constraints up front: chunk size 512 tokens, overlap 50, embeddings go to opensearch, similarity threshold 0.75, top k 6. cite the transcript id with every chunk."</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('sports-brain','1')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 5 -->
+            <div class="insight-card" data-sev="info" data-cat="blindspot" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-info"></div>
+                <div class="card-cat-tag">Blind Spot</div>
+                <div class="card-severity-label sev-label-info">Worth Noting</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">15 implementation sessions on sports-brain this month. Zero error handling prompts for LiveKit connection failures.</div>
+                <div class="card-evidence">LiveKit connections drop. Voice sessions can break mid-stream. No prompt in the last 30 days addresses <strong>what happens when they do.</strong></div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('sports-brain','5')"><span class="dot"></span>session · sports-brain · Apr 30 15:40</button>
+                    <span class="evi-turn">turn 5 of 6</span>
+                  </div>
+                  <div class="evi-quote">"now wire the livekit voice session: when retrieval finishes, synthesize the answer and publish the audio track to the room"</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('sports-brain','5')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 6 -->
+            <div class="insight-card" data-sev="mid" data-cat="prompting" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-mid"></div>
+                <div class="card-cat-tag">Prompting Intelligence</div>
+                <div class="card-severity-label sev-label-mid">Quick Win</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">You rebuilt the same OpenSearch query formatter in 3 separate sessions. This is a sub-agent candidate.</div>
+                <div class="card-evidence">Sessions: Feb 28, Mar 4, Apr 30. Each took <strong>8–12 minutes.</strong> Total rework cost: ~30 minutes on something that should exist once.</div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('sports-brain','2')"><span class="dot"></span>session · sports-brain · Apr 30 15:40</button>
+                    <span class="evi-turn">turn 2 of 6</span>
+                  </div>
+                  <div class="evi-quote">"rebuild the opensearch query formatter for this: match on transcript text plus term filters for sport and week, size 20, sorted by score"</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('sports-brain','2')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 7 -->
+            <div class="insight-card" data-sev="mid" data-cat="knowledge" onclick="toggleCard(this)">
+              <div class="card-header">
+                <div class="severity-dot sev-mid"></div>
+                <div class="card-cat-tag">Knowledge &amp; Decisions</div>
+                <div class="card-severity-label sev-label-mid">At Risk</div>
+              </div>
+              <div class="card-body">
+                <div class="card-headline">3 architectural decisions from yesterday exist only in session data; they'll be invisible to your future self by next week.</div>
+                <div class="card-evidence">Detected: API-layer caching locked in on the payments dashboard, S3 bucket region pinned, embedding model deferred. <strong>None documented.</strong></div>
+                <div class="card-foot"><span class="expand-cue"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13"><path d="M6 9l6 6 6-6"/></svg></span><button class="chip-dismiss" onclick="event.stopPropagation(); dismissCard(this)">Dismiss</button></div>
+              </div>
+              <div class="card-expanded">
+                <div class="card-expand-body">
+                  <div class="evi-head">Evidence &#183; why the mirror believes this</div><div class="evi-row">
+                    <button class="evi-chip" onclick="event.stopPropagation(); openTrace('acme-payments','6')"><span class="dot"></span>session · acme-payments · Mon 11:02</button>
+                    <span class="evi-turn">turn 6 of 8</span>
+                  </div>
+                  <div class="evi-quote">"try caching the response at the API layer instead of the db level. we can't change the db schema, the legacy system depends on it"</div>
+                  <div class="evi-actions">
+                    <button class="action-chip primary" onclick="event.stopPropagation(); openTrace('acme-payments','6')">Open the session</button>
+                    <button class="action-chip" onclick="event.stopPropagation(); markWrong(this)">This is wrong</button>
+                  </div>
+                  
+                  
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT PANEL -->
+          <div class="sidebar-right">
+
+            <!-- DAILY TASKS -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                  Daily Actions
+                </div>
+                <div class="panel-count">2 tasks</div>
+              </div>
+              <div class="task-item" onclick="toggleTask(this)">
+                <div class="task-top">
+                  <div class="task-checkbox" id="task1-check"></div>
+                  <div class="task-name">Create CLAUDE.md stack context</div>
+                  <div class="task-time">~5 min</div>
+                </div>
+                <div class="task-meta">
+                  <div class="task-from">From: Prompting insight</div>
+                  <div class="task-impact">Save 20 min/week</div>
+                </div>
+              </div>
+              <div class="task-item" onclick="toggleTask(this)">
+                <div class="task-top">
+                  <div class="task-checkbox" id="task2-check"></div>
+                  <div class="task-name">Build OpenSearch query sub-agent</div>
+                  <div class="task-time">~15 min</div>
+                </div>
+                <div class="task-meta">
+                  <div class="task-from">From: Efficiency insight</div>
+                  <div class="task-impact">Eliminate rebuild cost</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUICK LIBRARY -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+                  Library
+                </div>
+                <a class="section-link" onclick="go('library')">See all →</a>
+              </div>
+              <div class="playbook-item">
+                <div class="playbook-icon" style="background: var(--purple-bg)">📌</div>
+                <div class="playbook-info">
+                  <div class="playbook-name">RAG context block</div>
+                  <div class="playbook-uses">Used 7 times</div>
+                </div>
+                <button class="playbook-copy" onclick="showToast('Copied to clipboard')">Copy</button>
+              </div>
+              <div class="playbook-item">
+                <div class="playbook-icon" style="background: var(--teal-bg)">📌</div>
+                <div class="playbook-info">
+                  <div class="playbook-name">Debugging structure</div>
+                  <div class="playbook-uses">Used 12 times</div>
+                </div>
+                <button class="playbook-copy" onclick="showToast('Copied to clipboard')">Copy</button>
+              </div>
+              <div class="playbook-item">
+                <div class="playbook-icon" style="background: var(--amber-bg)">📌</div>
+                <div class="playbook-info">
+                  <div class="playbook-name">Constraint declaration</div>
+                  <div class="playbook-uses">Used 5 times</div>
+                </div>
+                <button class="playbook-copy" onclick="showToast('Copied to clipboard')">Copy</button>
+              </div>
+            </div>
+
+            <!-- STREAK / PROGRESS -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1c0 0-5 3.5-5 8a5 5 0 0010 0c0-4.5-5-8-5-8z"/></svg>
+                  This Week
+                </div>
+              </div>
+              <div style="padding: 12px 16px">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px">
+                  <div style="text-align: center; flex: 1">
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text-primary)">2.8</div>
+                    <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px">Avg corrections</div>
+                  </div>
+                  <div style="width: 1px; background: var(--border)"></div>
+                  <div style="text-align: center; flex: 1">
+                    <div style="font-size: 18px; font-weight: 600; color: var(--accent-2)">↓18%</div>
+                    <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px">vs last week</div>
+                  </div>
+                  <div style="width: 1px; background: var(--border)"></div>
+                  <div style="text-align: center; flex: 1">
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text-primary)">14</div>
+                    <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px">Templates saved</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 6px">Daily session quality</div>
+                <div class="sparkline">
+                  <div class="spark-bar" style="height: 45%; background: var(--accent); opacity: 0.6"></div>
+                  <div class="spark-bar" style="height: 60%; background: var(--amber); opacity: 0.7"></div>
+                  <div class="spark-bar" style="height: 75%; background: var(--accent-2); opacity: 0.7"></div>
+                  <div class="spark-bar" style="height: 55%; background: var(--amber); opacity: 0.7"></div>
+                  <div class="spark-bar" style="height: 85%; background: var(--accent-2); opacity: 0.8"></div>
+                  <div class="spark-bar" style="height: 90%; background: var(--accent-2); opacity: 0.9"></div>
+                  <div class="spark-bar" style="height: 80%; background: var(--accent-2)"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-tertiary); margin-top: 4px">
+                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CATEGORY BREAKDOWN (hub cards) -->
+        <div class="sect"><h2>Intelligence categories</h2><p>8 categories · 67 insights this month · tracking since Feb 2026. Click a card to open the full intelligence breakdown.</p></div>
+        <div class="hub-grid">
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--purple-bg)">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h5" stroke="#4f46e5" stroke-width="1.3" stroke-linecap="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Prompting Intelligence</div>
+                <div class="hub-card-sub">14 insights · last: today</div>
+              </div>
+              <div class="hub-trend-badge trend-watch">Needs work</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">3.2</div><div class="hub-stat-label">Avg specificity</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">68%</div><div class="hub-stat-label">Compound rate</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">5×</div><div class="hub-stat-label">Stack re-explains</div></div>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-seg" style="height: 40%; background: #dc2626; opacity: 0.5"></div>
+                <div class="trend-seg" style="height: 50%; background: #f59e0b; opacity: 0.6"></div>
+                <div class="trend-seg" style="height: 45%; background: #f59e0b; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 60%; background: #f59e0b; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 65%; background: #059669; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 70%; background: #059669; opacity: 0.8"></div>
+                <div class="trend-seg" style="height: 75%; background: #059669"></div>
+              </div>
+              <div class="hub-latest">
+                <span>Last: Stack re-explanation pattern</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--weak-bg)">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v5l3 2" stroke="#dc2626" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="8" r="6" stroke="#dc2626" stroke-width="1.2"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Session Efficiency</div>
+                <div class="hub-card-sub">9 insights · last: yesterday</div>
+              </div>
+              <div class="hub-trend-badge trend-watch">Watch</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">3.4</div><div class="hub-stat-label">Avg corrections</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">22%</div><div class="hub-stat-label">Loop rate</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">47m</div><div class="hub-stat-label">Longest loop</div></div>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-seg" style="height: 80%; background: #dc2626; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 70%; background: #dc2626; opacity: 0.6"></div>
+                <div class="trend-seg" style="height: 75%; background: #f59e0b; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 60%; background: #f59e0b; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 55%; background: #f59e0b; opacity: 0.8"></div>
+                <div class="trend-seg" style="height: 50%; background: #059669; opacity: 0.8"></div>
+                <div class="trend-seg" style="height: 45%; background: #059669"></div>
+              </div>
+              <div class="hub-latest">
+                <span>Last: Auth middleware loop</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Yesterday</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--ok-bg)">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="#059669" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Skill &amp; Domain</div>
+                <div class="hub-card-sub">11 insights · improving fast</div>
+              </div>
+              <div class="hub-trend-badge trend-up">Improving</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">RAG</div><div class="hub-stat-label">Fastest growth</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">DB</div><div class="hub-stat-label">Stretch zone</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">4×</div><div class="hub-stat-label">Domains active</div></div>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-seg" style="height: 35%; background: #f59e0b; opacity: 0.5"></div>
+                <div class="trend-seg" style="height: 45%; background: #f59e0b; opacity: 0.6"></div>
+                <div class="trend-seg" style="height: 55%; background: #059669; opacity: 0.7"></div>
+                <div class="trend-seg" style="height: 65%; background: #059669; opacity: 0.8"></div>
+                <div class="trend-seg" style="height: 72%; background: #059669; opacity: 0.85"></div>
+                <div class="trend-seg" style="height: 80%; background: #059669; opacity: 0.9"></div>
+                <div class="trend-seg" style="height: 88%; background: #059669"></div>
+              </div>
+              <div class="hub-latest">
+                <span>Last: RAG correction rate ↓ 65%</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--amber-bg)">
+                <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="#d97706" stroke-width="1.2"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5" stroke="#d97706" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Cognitive Style</div>
+                <div class="hub-card-sub">8 insights · stable pattern</div>
+              </div>
+              <div class="hub-trend-badge trend-flat">Stable</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">Top↓</div><div class="hub-stat-label">Thinking style</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">62%</div><div class="hub-stat-label">Commit-first</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">Low</div><div class="hub-stat-label">Alt-seeking</div></div>
+              </div>
+              <div class="hub-latest" style="margin-top: 8px">
+                <span>Last: Premature commitment pattern</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--blue-bg)">
+                <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#3b82f6" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="#3b82f6" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Blind Spots</div>
+                <div class="hub-card-sub">6 insights · 3 persistent</div>
+              </div>
+              <div class="hub-trend-badge trend-watch">3 active</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">0%</div><div class="hub-stat-label">Error handling</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">2%</div><div class="hub-stat-label">Security prompts</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">0</div><div class="hub-stat-label">Test prompts</div></div>
+              </div>
+              <div class="hub-latest" style="margin-top: 8px">
+                <span>Last: LiveKit failure handling absent</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--teal-bg)">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M3 13V7l5-5 5 5v6H10V9H6v4H3z" stroke="#0d9488" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Knowledge &amp; Decisions</div>
+                <div class="hub-card-sub">12 insights · 18 ADRs captured</div>
+              </div>
+              <div class="hub-trend-badge trend-up">Active</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">18</div><div class="hub-stat-label">Decisions saved</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">3</div><div class="hub-stat-label">At risk today</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">7</div><div class="hub-stat-label">Constraints</div></div>
+              </div>
+              <div class="hub-latest" style="margin-top: 8px">
+                <span>Last: 3 decisions undocumented</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: var(--mutedbg)">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M2 12l4-4 3 3 5-7" stroke="#52525b" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Workflow &amp; Habits</div>
+                <div class="hub-card-sub">7 insights · peak: 10–1pm</div>
+              </div>
+              <div class="hub-trend-badge trend-up">Good rhythm</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">10am</div><div class="hub-stat-label">Peak window</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">2.3</div><div class="hub-stat-label">Switches/day</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">3×</div><div class="hub-stat-label">Deep sessions</div></div>
+              </div>
+              <div class="hub-latest" style="margin-top: 8px">
+                <span>Last: Deep work sessions increasing</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Apr 30</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-card" onclick="go('intelligences')">
+            <div class="hub-card-header">
+              <div class="hub-icon" style="background: #fdf2f8">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 2C5 2 3 4.5 3 7s1 4 2 5h6c1-1 2-2.5 2-5S11 2 8 2z" stroke="#db2777" stroke-width="1.2"/><path d="M6 11v3M10 11v3" stroke="#db2777" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="hub-card-info">
+                <div class="hub-card-title">Emotional &amp; State</div>
+                <div class="hub-card-sub">5 insights · mostly positive</div>
+              </div>
+              <div class="hub-trend-badge trend-up">Healthy</div>
+            </div>
+            <div class="hub-card-body">
+              <div class="hub-stats">
+                <div class="hub-stat"><div class="hub-stat-val">Low</div><div class="hub-stat-label">Frustration signals</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">3×</div><div class="hub-stat-label">Flow sessions</div></div>
+                <div class="hub-stat"><div class="hub-stat-val">0</div><div class="hub-stat-label">Late nights</div></div>
+              </div>
+              <div class="hub-latest" style="margin-top: 8px">
+                <span>Last: Flow state on config session</span>
+                <span style="font-size: 11px; color: var(--text-tertiary)">Yesterday</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══ DYNAMIC VIEWS (donor) ══ -->
+      <div id="view-dyn" class="hidden"></div>
+
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- data ---------------- */
+const DIMS=[
+ ['Prompt Specificity & Constraint Articulation','developing','How clearly you state goals, constraints, and acceptance criteria up front.'],
+ ['Use of Examples & Output Format Specification','weak','Whether you show the assistant what good output looks like.'],
+ ['Prompt Decomposition & Role Framing','developing','Breaking compound asks into steps and framing the right role.'],
+ ['Prompt Maturation & Pattern Reuse','strong','Reusing and refining prompts that worked before.'],
+ ['AI Literacy Composite & Fluency','strong','Your overall fluency working with AI tools.'],
+ ['File Attachment Hygiene & Signal-to-Noise','developing','Attaching what helps, leaving out what distracts.'],
+ ['Context Pruning & Rot Avoidance','weak','Keeping long sessions from drowning in stale context.'],
+ ['Source-Grounding for Factual Claims','developing','Grounding regulated or factual claims in real sources.'],
+ ['Schema, Convention & Prior-Decision Loading','strong','Loading your team\'s conventions before asking for code.'],
+ ['Projects, Skills & Persistent Context Adoption','developing','Using persistent context instead of re-explaining.'],
+ ['Verification Discipline (Tests, Type-Checks)','strong','Ending work with explicit verification turns.'],
+ ['Compliance-Path Rigor Differential','developing','How rigor changes when compliance is on the line.'],
+ ['AI-Line Acceptance & Code-to-Commit Conversion','strong','How much generated code survives to commit.'],
+ ['Median Turns-to-Completion','developing','How quickly sessions converge to done.'],
+ ['Restart Rate & Iteration Convergence','weak','How often sessions restart instead of converging.'],
+ ['Session-to-Commit Conversion','developing','Sessions that end in shipped work.'],
+ ['Stuck-Signal Composite (Personal)','developing','Early signals that a session is going in circles.'],
+ ['Domain Confidence & Behavioral Skill Map','strong','What your behavior says you\'re strong at.'],
+ ['Blind Spot Mirror (What You Never Prompt About)','weak','Topics that never appear in your prompts: testing, security…'],
+ ['Personal Decision & Constraint Registry','developing','Decisions and constraints captured from your sessions.'],
+ ['Commit Quality & PR Health','strong','The health of what actually lands.'],
+ ['Credential & Secret Leakage Events','weak','Secrets appearing in prompts or generated files.'],
+ ['Personal AI Journal (Daily Mirror)','strong','Your day, reflected back in plain language.'],
+ ['Personal Weekly Deep Dive','developing','The weekly pattern read across all sessions.'],
+ ['"Your Data" Trust Dashboard','strong','Exactly what\'s captured, derived, and shared, and what never is.']
+];
+const SESSIONS=[
+ {id:'SS-2903',nm:'Payments dashboard: summary endpoint latency',dt:'May 11 · 11:02',tool:'Claude Code',tc:'#d97706',proj:'acme-payments',tags:[['Decision candidate','clean'],['1 reversal','heavy']],t:8,tok:'241k',out:['Merged #5121','m'],trace:'acme-payments'},
+ {id:'SS-2899',nm:'Gateway timeout config on the voice service',dt:'May 11 · 17:05',tool:'Claude Code',tc:'#d97706',proj:'sports-brain',tags:[['Clean','clean']],t:3,tok:'42k',out:['Merged #221','m'],trace:'sports-brain-ctx'},
+ {id:'SS-2896',nm:'Auth middleware for the payments routes',dt:'May 11 · 09:14',tool:'Claude Code',tc:'#d97706',proj:'acme-auth',tags:[['Heavy iteration','heavy']],t:9,tok:'188k',out:['Merged #5117','m'],trace:'acme-auth'},
+ {id:'SS-2871',nm:'Voice Q&A retrieval: RAG over match transcripts',dt:'Apr 30 · 15:40',tool:'Claude Code',tc:'#d97706',proj:'sports-brain',tags:[['Clean','clean'],['L4','l4']],t:6,tok:'196k',out:['Merged #217','m'],trace:'sports-brain'},
+ {id:'SS-2847',nm:'JWT refresh token expiry: fix and verify',dt:'Apr 28 · 14:22',tool:'Claude Code',tc:'#d97706',proj:'auth-service',tags:[['Clean','clean'],['L4','l4']],t:4,tok:'120k',out:['Merged #4421','m']},
+ {id:'SS-2851',nm:'Supabase → Postgres migration script',dt:'Apr 27 → 28',tool:'Codex',tc:'#0ea5e9',proj:'data-platform',tags:[['Heavy iteration','heavy']],t:17,tok:'412k',out:['Draft','d']},
+ {id:'SS-2862',nm:'Update onboarding docs for the SDK',dt:'Apr 28 · 16:08',tool:'Claude.ai',tc:'#d97706',proj:'docs',tags:[['Clean','clean'],['forked from team','']],t:6,tok:'58k',out:['PR open #4429','d']},
+ {id:'SS-2839',nm:'Background worker: dead-letter queue handling',dt:'Apr 27',tool:'Cursor',tc:'#8b5cf6',proj:'workers',tags:[['Verified','clean'],['L5 tool breadth','l5']],t:9,tok:'203k',out:['Merged #4418','m']},
+ {id:'SS-2811',nm:'Rate limiter: 429 handling under burst load',dt:'Apr 25',tool:'Claude Code',tc:'#d97706',proj:'gateway',tags:[['Heavy iteration','heavy'],['debug','']],t:22,tok:'588k',out:['Merged #4407','m']},
+ {id:'SS-2733',nm:'Notifications service: DB migration v2',dt:'Apr 18',tool:'Codex',tc:'#0ea5e9',proj:'notifications',tags:[['Clean','clean']],t:14,tok:'267k',out:['Merged #4368','m']},
+ {id:'SS-2705',nm:'Stripe webhook idempotency keys',dt:'Apr 15',tool:'Gemini CLI',tc:'#3b82f6',proj:'billing',tags:[['Clean','clean'],['L4','l4']],t:5,tok:'96k',out:['Merged #4341','m']},
+ {id:'SS-2691',nm:'RSC island hydration mismatch debug',dt:'Apr 14',tool:'Claude.ai',tc:'#d97706',proj:'web',tags:[['Heavy iteration','heavy']],t:19,tok:'445k',out:['Abandoned','a']},
+ {id:'SS-2664',nm:'Audit log retention policy implementation',dt:'Apr 12',tool:'Cursor',tc:'#8b5cf6',proj:'compliance',tags:[['Verified','clean'],['L5 verification','l5']],t:7,tok:'148k',out:['Merged #4309','m']}
+];
+const LIB=[
+ ['RAG context block','7 uses','g','Implementation','Corpus: [what\'s indexed]\nRetrieval: [top-k, filters]\nExpected shape: [cite sources inline]\nDo not: [hallucinate beyond corpus]','SS-2851'],
+ ['Debugging structure prompt','12 uses','g','Debugging','Error: [paste trace]\nRuled out: [what you tested]\nReproduces when: [condition]\nCurrent hypothesis: [your theory]','SS-2811'],
+ ['Exploration-first approach','3 uses','g','Architecture','Before implementing: give me 2–3 ways\nto approach [X], with tradeoffs.\nRecommend one and say why.','SS-2839'],
+ ['Stack context block','New','n','Context','Stack: [runtime, framework, versions]\nConventions: [lint, patterns]\nRepo shape: [key dirs]','SS-2847'],
+ ['Constraint declaration opener','5 uses','g','Implementation','Goal: [one sentence]\nConstraints: [must / must-not]\nAcceptance: [how we\'ll verify]','SS-2705'],
+ ['Code review checklist prompt','4 uses','g','Review','Review for: edge cases, failure modes,\nsecurity, perf. Rank findings by severity.\nSay what you did NOT check.','SS-2664']
+];
+/* real session traces behind the evidence receipts on Daily Insights */
+const TRACES={
+ 'acme-payments':{
+  sid:'SS-2903',proj:'acme-payments',mini:['1 reversal','heavy'],outLabel:'MERGED IN PR #5121',
+  title:'Payments dashboard: summary endpoint latency',
+  date:'Mon May 11',start:'11:02',end:'11:58',dur:'56 min',tokens:'241k',
+  out:'Merged #5121',outNote:'p95 11.2s to 180ms',turnNote:'reversal at turn 6, recovered',
+  sum:'The summary endpoint on the acme.dev payments dashboard was timing out for older accounts. The session committed to a schema change, hit the legacy settlement wall, and reversed into an API layer cache at turn 6. That reversal is the decision the mirror keeps citing.',
+  stamp:'Session · Mon May 11, 11:02 to 11:58 · payments dashboard latency · 8 turns · 1 reversal',
+  turns:[
+   {tm:'11:02',you:"the summary endpoint on the payments dashboard is timing out for any account older than a year. p95 is 11.2 seconds. pretty sure it is the aggregation query on ledger_entries.",
+    worked:"Read api/summary.ts · ran EXPLAIN on the ledger aggregate · 0 edits · 41s",
+    ai:"Confirmed. The aggregate scans 14M rows of ledger_entries per request with no covering index, recomputing twelve months of history on every dashboard load. I can lay out the options with tradeoffs before we pick a direction."},
+   {tm:'11:09',you:"no need, go with a denormalized totals column. add it to the ledger schema and start the migration now.",
+    worked:"Drafted migration 0041_add_totals · read legacy write paths · 1 edit · 2m 10s",
+    ai:"Migration drafted. One flag before running it: something outside this repo writes to ledger_entries directly. There is a nightly bulk insert that does not go through the ORM."},
+   {tm:'11:17',you:"what writes to it outside the orm? find it before we run anything.",
+    worked:"Grep ledger_entries across infra · read settle_batch.sql · 0 edits · 1m 32s",
+    ai:"Found it. The legacy settlement system runs settle_batch.sql at 02:00 and inserts into ledger_entries with a fixed column list. Any schema change on that table risks breaking the nightly settlement run."},
+   {tm:'11:24',you:"can we patch the legacy insert to include the new column?",
+    worked:"Read settlement runbook · checked deploy history · 0 edits · 58s",
+    ai:"Not safely from here. The settlement binary last shipped in 2021, its source repo is archived, and finance owns sign-off on any change to it. The schema is effectively frozen."},
+   {tm:'11:31',you:"hold the migration then. what does that leave us?",
+    worked:"Reverted migration draft · 1 edit · 20s",
+    ai:"Held and reverted. A covering index alone gets p95 to roughly 4 seconds, still far from your 500ms target. The remaining path that avoids the schema entirely is caching the computed response."},
+   {tm:'11:38',you:"try caching the response at the API layer instead of the db level. we can't change the db schema, the legacy system depends on it",
+    worked:"Wrote summaryCache.ts middleware · wired Redis · 3 edits · 3m 05s",
+    ai:"Done. Summary responses now cache in Redis with a 60 second TTL, keyed by account id and invalidated on ledger write events. The db schema is untouched. Flagging this as a decision worth recording: cache at the API layer, never at the db level, because the legacy settlement system depends on the schema."},
+   {tm:'11:47',you:"replay the slow accounts from the p95 report against it.",
+    worked:"Replayed the 50 slowest requests · captured timings · 0 edits · 1m 44s",
+    ai:"Cold hit 1.9s, warm hits 140 to 210ms, p95 across the replay set is 180ms. Invalidation verified against a simulated ledger write."},
+   {tm:'11:54',you:"good. open the pr. and yes, write that decision down properly tomorrow.",
+    worked:"Opened PR #5121 · ran the payments test suite · 0 edits · 55s",
+    ai:"PR #5121 open, 34 of 34 tests pass. Reminder attached to tomorrow's briefing: the caching decision and the frozen schema constraint currently exist only inside this session."}
+  ]},
+ 'acme-auth':{
+  sid:'SS-2896',proj:'acme-auth',mini:['Heavy iteration','heavy'],outLabel:'MERGED IN PR #5117',
+  title:'Auth middleware for the payments routes',
+  date:'Mon May 11',start:'09:14',end:'10:01',dur:'47 min',tokens:'188k',
+  out:'Merged #5117',outNote:'after 8 corrective turns',turnNote:'bottom quartile for acme-auth',
+  sum:'A 47 minute correction loop. The opening ask named no token format, no issuer, and no session store, so every assumption was walked back one turn at a time. The receipt points at turn 1, where the loop was born.',
+  stamp:'Session · Mon May 11, 09:14 to 10:01 · auth middleware loop · 9 turns · heavy iteration',
+  turns:[
+   {tm:'09:14',you:"add auth middleware to the payments routes so only logged in users can hit them",
+    worked:"Read routes/payments.ts · scaffolded middleware/auth.ts · 2 edits · 1m 12s",
+    ai:"Added session-cookie auth middleware: it checks the cookie against a sessions table in Postgres and rejects with 401 otherwise. Applied to all /payments routes."},
+   {tm:'09:21',you:"no, we don't keep sessions in postgres. auth is jwt based.",
+    worked:"Rewrote auth.ts for bearer tokens · 2 edits · 54s",
+    ai:"Switched to JWT bearer auth. Verifying with HS256 against APP_SECRET, since no key material was specified."},
+   {tm:'09:27',you:"it's rs256, not hs256. tokens come from the identity service, public keys are on its jwks endpoint.",
+    worked:"Swapped verify to RS256 · added JWKS fetch with cache · 3 edits · 1m 40s",
+    ai:"Verification now uses RS256 against the identity service JWKS, cached for an hour. Expiry and audience claims are checked."},
+   {tm:'09:33',you:"audience is wrong. it should be payments-api, not acme-web.",
+    worked:"Updated audience claim check · 1 edit · 30s",
+    ai:"Audience now validates against payments-api. Staging tokens minted for acme-web will be rejected, which sounds like the intent."},
+   {tm:'09:40',you:"staging is rejecting valid tokens now. expiry looks fine on paper.",
+    worked:"Compared token iat and exp against server clock · 0 edits · 1m 05s",
+    ai:"The staging box clock drifts 40 seconds ahead, so fresh tokens look not-yet-valid there. Added a 60 second leeway on nbf and iat."},
+   {tm:'09:46',you:"now the dashboard logs people out after 15 minutes. refresh is supposed to keep them alive.",
+    worked:"Read refresh flow · wired Redis refresh store into middleware · 2 edits · 2m 20s",
+    ai:"The middleware was ignoring refreshed access tokens. It now honors the refresh flow backed by Redis, so sessions survive past the 15 minute access token expiry."},
+   {tm:'09:52',you:"the 401 body changed shape. frontend expects {error, code} and it's getting a plain string.",
+    worked:"Restored the error envelope · 1 edit · 25s",
+    ai:"401 and 403 responses restored to the {error, code} envelope the dashboard parses."},
+   {tm:'09:56',you:"and don't touch the success response shape either, downstream services parse it.",
+    worked:"Diffed response paths · verified pass-through · 0 edits · 48s",
+    ai:"Verified: success responses pass through byte-identical. Only rejected requests get the envelope."},
+   {tm:'10:01',you:"ok staging passes. rename the file to authJwt.ts to match conventions and merge it.",
+    worked:"Renamed middleware · opened PR #5117 · 1 edit · 1m 02s",
+    ai:"Merged as #5117. Worth noting for tomorrow: the five constraints corrected in this session would fit in a 40 word opening prompt."}
+  ]},
+ 'sports-brain':{
+  sid:'SS-2871',proj:'sports-brain',mini:['Clean','clean'],outLabel:'MERGED IN PR #217',
+  title:'Voice Q&A retrieval: RAG over match transcripts',
+  date:'Thu Apr 30',start:'15:40',end:'16:31',dur:'51 min',tokens:'196k',
+  out:'Merged #217',outNote:'2 corrections total',turnNote:'top quartile for sports-brain',
+  sum:'The session that flipped the RAG trend. Constraints were loaded upfront at turn 1 and the retriever landed with a single correction. The same trace holds two more receipts the mirror cites: the formatter rebuild at turn 2 and the happy-path-only LiveKit wiring at turn 5.',
+  stamp:'Session · Thu Apr 30, 15:40 to 16:31 · voice Q&A retrieval · 6 turns · clean',
+  turns:[
+   {tm:'15:40',you:"build the retriever for match transcript q&a. constraints up front: chunk size 512 tokens, overlap 50, embeddings go to opensearch, similarity threshold 0.75, top k 6. cite the transcript id with every chunk.",
+    worked:"Read ingest pipeline · scaffolded retriever.py · 2 edits · 1m 30s",
+    ai:"Retriever scaffolded exactly to those constraints: 512/50 chunking, an OpenSearch knn index with the 0.75 threshold, and every hit carries transcript_id and timestamp. Nothing needed guessing."},
+   {tm:'15:49',you:"rebuild the opensearch query formatter for this: match on transcript text plus term filters for sport and week, size 20, sorted by score",
+    worked:"Wrote query_formatter.py · 1 edit · 1m 05s",
+    ai:"Formatter rebuilt: a bool query with a match clause on text, term filters for sport and week, size 20, sorted by _score. This is the third time this formatter has been rebuilt from scratch. It is a strong sub-agent candidate."},
+   {tm:'15:58',you:"run it against the sample question set.",
+    worked:"Ran 20 sample queries · captured hit positions · 0 edits · 2m 18s",
+    ai:"18 of 20 questions retrieve the right transcript in the top 3. Both misses are date-range questions where the week filter excludes the right chunks."},
+   {tm:'16:07',you:"drop the week filter when the question mentions a date range.",
+    worked:"Added date-range branch to the formatter · re-ran samples · 1 edit · 1m 12s",
+    ai:"Done, 20 of 20 now. That was the only correction the retriever needed."},
+   {tm:'16:14',you:"now wire the livekit voice session: when retrieval finishes, synthesize the answer and publish the audio track to the room",
+    worked:"Wired voice/session.py to the retriever · 2 edits · 2m 40s",
+    ai:"Wired. On retrieval completion the answer is synthesized and the audio track publishes to the room. Note: this covers the happy path only. Nothing handles a dropped connection or a failed publish yet."},
+   {tm:'16:25',you:"great. run the suite and merge.",
+    worked:"Ran test suite · opened PR #217 · 0 edits · 1m 20s",
+    ai:"Tests pass, PR #217 merged. Two corrections this session, against your 5.8 average for RAG work in weeks 1 to 3."}
+  ]},
+ 'sports-brain-ctx':{
+  sid:'SS-2899',proj:'sports-brain',mini:['Clean','clean'],outLabel:'MERGED IN PR #221',
+  title:'Gateway timeout config on the voice service',
+  date:'Mon May 11',start:'17:05',end:'17:17',dur:'12 min',tokens:'42k',
+  out:'Merged #221',outNote:'12 minutes end to end',turnNote:'no corrections',
+  sum:'A twelve minute config fix, and the cleanest session of the day. Its receipt value is turn 1: the full stack context was typed out by hand yet again, which is exactly what CLAUDE.md exists to absorb.',
+  stamp:'Session · Mon May 11, 17:05 to 17:17 · gateway timeout config · 3 turns · clean',
+  turns:[
+   {tm:'17:05',you:"context first, same as always: python backend managed with uv, service level envs, postgres for state, opensearch for search, livekit for voice, react frontend that talks to the gateway only, never the api directly, no co-authored-by on commits. now the actual problem: the voice service times out behind the gateway after 30 seconds on long answers.",
+    worked:"Read gateway.yaml · traced the timeout chain · 0 edits · 50s",
+    ai:"Context noted, and worth saying out loud: that stack block has now been typed five times this week. The timeout itself is the gateway default, a 30 second upstream read timeout, while the voice service can legitimately stream for longer."},
+   {tm:'17:11',you:"raise it for the voice route only. everything else keeps 30 seconds.",
+    worked:"Added a route-level override in gateway.yaml · 1 edit · 35s",
+    ai:"The voice route now has a 120 second read timeout. Every other route keeps the 30 second default."},
+   {tm:'17:15',you:"merge it.",
+    worked:"Opened PR #221 · config lint pass · 0 edits · 28s",
+    ai:"Merged #221. Twelve minutes end to end, three turns, no corrections."}
+  ]}
+};
+/* ---------------- helpers ---------------- */
+const $=s=>document.querySelector(s);
+const content=$('#view-dyn');
+const homeView=$('#view-insights');
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
+function showToast(m){toast(m)}
+function scrollTop(){document.querySelector('.main').scrollTop=0}
+function lvl(l){const L={strong:'Strong',developing:'Developing',weak:'Weak'};return `<span class="lvl ${l}"><span class="dots"><i></i><i></i><i></i></span>${L[l]}</span>`}
+function crumb(t){$('#crumb').textContent=t;document.querySelectorAll('.nit').forEach(n=>n.classList.toggle('on',n.dataset.nav===state.nav))}
+/* ---------------- Daily Insights interactions (from AI-Coach) ---------------- */
+function toggleCard(card){
+ const was=card.classList.contains('expanded');
+ document.querySelectorAll('.insight-card.expanded').forEach(c=>c.classList.remove('expanded'));
+ if(!was)card.classList.add('expanded');
+}
+function toggleEvidence(btn){var body=btn.parentElement.querySelector('.evi-body');if(!body)return;var open=body.classList.toggle('open');btn.classList.toggle('open',open);}
+function toggleTurn(btn){var rest=btn.parentElement.querySelector('.turn-rest');if(!rest)return;var open=rest.classList.toggle('open');btn.textContent=open?'hide reply':'show reply';}
+function dismissCard(btn){
+ const card=btn.closest('.insight-card');
+ card.style.opacity='0';
+ card.style.transform='translateX(20px)';
+ card.style.transition='all 0.25s ease';
+ setTimeout(()=>{card.style.display='none';},250);
+ showToast('Insight dismissed');
+}
+function toggleTask(item){
+ const check=item.querySelector('.task-checkbox');
+ const isDone=check.classList.contains('done');
+ if(!isDone){
+  check.classList.add('done');
+  check.innerHTML='<svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  item.querySelector('.task-name').style.textDecoration='line-through';
+  item.querySelector('.task-name').style.color='var(--text-tertiary)';
+  showToast('Task marked done, great work');
+ }else{
+  check.classList.remove('done');
+  check.innerHTML='';
+  item.querySelector('.task-name').style.textDecoration='';
+  item.querySelector('.task-name').style.color='';
+ }
+}
+function filterCards(sev,btn){
+ btn.parentElement.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+ btn.classList.add('active');
+ document.querySelectorAll('#view-insights .insight-card').forEach(card=>{
+  if(sev==='all'){card.style.display='';return}
+  const cardSev=card.dataset.sev;
+  const match=(sev==='high'&&cardSev==='high')||
+              (sev==='mid'&&(cardSev==='mid'))||
+              (sev==='low'&&(cardSev==='low'||cardSev==='info'));
+  card.style.display=match?'':'none';
+ });
+}
+function filterCat(cat,btn){
+ btn.parentElement.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+ btn.classList.add('active');
+ document.querySelectorAll('#view-insights .insight-card').forEach(card=>{
+  if(cat==='all'){card.style.display='';return}
+  card.style.display=card.dataset.cat===cat?'':'none';
+ });
+}
+function copyPrompt(btn,type){
+ showToast('Prompt copied to clipboard');
+}
+function openTrace(sid,turn){
+ const h='#trace/'+sid+(turn?'/'+turn:'');
+ if(location.hash===h){go(h.slice(1))}else{location.hash=h}
+}
+function markWrong(btn){
+ btn.textContent='Flagged';
+ btn.disabled=true;
+ btn.style.opacity='.55';
+ showToast('Noted. This receipt is flagged and the insight will be rechecked.');
+}
+function copyToClipboard(btn){
+ const block=btn.closest('.code-block');
+ const text=block.textContent.replace('Copy','').trim();
+ navigator.clipboard.writeText(text).catch(()=>{});
+ btn.textContent='Copied!';
+ setTimeout(()=>btn.textContent='Copy',2000);
+ showToast('Copied to clipboard');
+}
+/* ---------------- donor views ---------------- */
+function vIntel(filter='All'){
+ crumb('Intelligences');
+ const counts={All:25,Strong:9,Developing:11,Weak:5};
+ const rows=DIMS.filter(d=>filter==='All'||d[1]===filter.toLowerCase())
+  .map((d,ix)=>`<div class="dcard" onclick="go('intel')"><div>${lvl(d[1])}</div><div class="nm">${d[0]}</div><div class="ds">${d[2]}</div><div class="op">Open →</div></div>`).join('');
+ content.innerHTML=`
+  <div class="phead"><h1>Intelligences</h1><div class="sub">25 dimensions tracked · 9 strong · 11 developing · 5 weak. Click any card to see the breakdown.</div></div>
+  <div class="chips">${['All','Strong','Developing','Weak'].map(f=>`<button class="fchip ${f===filter?'on':''}" onclick="vIntel('${f}')">${f}<span class="c">${counts[f]}</span></button>`).join('')}</div>
+  <div class="igrid">${rows}</div>`;
+ scrollTop();
+}
+function vIntelDetail(){
+ crumb('Intelligences');
+ content.innerHTML=`
+  <button class="back" onclick="go('intelligences')">← Back to intelligences</button>
+  <div class="hero"><div class="eyebrow">INTELLIGENCE ${lvl('developing')}</div>
+    <h1>Prompt Specificity & Constraint Articulation</h1>
+    <div class="ds">How clearly you state goals, constraints, and acceptance criteria up front: the difference between prompts that read like crisp engineering tickets and vague asks the assistant has to guess around.</div>
+    <div class="coach"><span class="cl">✦ Coach insight · synthesized from your last 30 days</span>
+    <p>Your behavior on this dimension is mixed: strong on the recurring patterns you've internalized (webhooks, migrations), inconsistent on first-touch problems. When the territory is new, your first prompt tends to under-specify and the session pays for it in corrections.</p></div>
+  </div>
+  <div class="dstack">
+    <div class="dbox"><h3>Reasoning · how this is calculated</h3><div class="steps">
+      <div class="step"><span class="n">1</span>Parses your prompts for explicit constraints, success criteria, edge cases, and what-not-to-do clauses.</div>
+      <div class="step"><span class="n">2</span>Compares against your own 90-day baseline; you're measured against yourself, not a leaderboard.</div>
+      <div class="step"><span class="n">3</span>Weights by outcome: turns to converge, restarts, and how much generated work you accepted.</div>
+      <div class="step"><span class="n">4</span>Adjusts for task class: a quick question isn't judged like a build request.</div></div></div>
+    <div class="dbox"><h3>Proof from your sessions</h3><div class="proof">
+      <div class="pq" onclick="go('session')"><div class="pm"><b>SS-2847</b><span>auth-middleware · May 11</span></div><div class="pt">Missing token format in the opening prompt: 8 turns to converge.</div></div>
+      <div class="pq" onclick="go('session')"><div class="pm"><b>SS-2705</b><span>payouts-webhook · May 10</span></div><div class="pt">All constraints stated up front: accepted in 2 turns.</div></div>
+      <div class="pq" onclick="go('session')"><div class="pm"><b>SS-2691</b><span>rsc-island · May 9</span></div><div class="pt">Boundary constraint named explicitly: first-turn accept.</div></div></div></div>
+    <div class="dbox"><h3>Improvement tips</h3><div class="tips">
+      <div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Open every session with a 25-word constraint block: goal, must, must-not, acceptance.</div>
+      <div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Attach one input/output example, always: examples out-perform adjectives.</div>
+      <div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Decompose compound asks: one goal per prompt converges faster than three.</div></div></div>
+  </div>`;
+ scrollTop();
+}
+function vSessions(){
+ crumb('Sessions');
+ const row=s=>`<tr class="srow" onclick="${s.trace?`openTrace('${s.trace}','')`:`go('session')`}">
+   <td><span class="sid">${s.id}</span></td>
+   <td><span class="snm">${s.nm}</span><br><span class="sdt">${s.dt}</span><div class="stg">${s.tags.map(t=>`<span class="mini ${t[1]}">${t[0]}</span>`).join('')}</div></td>
+   <td>${s.proj}</td><td class="num">${s.t}</td>
+   <td><span class="tool"><i style="background:${s.tc}"></i>${s.tool}</span></td>
+   <td class="num">${s.tok}</td><td><span class="outc ${s.out[1]}">${s.out[0]}</span></td></tr>`;
+ content.innerHTML=`
+  <div class="phead"><h1>Sessions</h1><div class="sub">13 sessions across 12 projects. Click any session to see its trace and scoring rationale.</div></div>
+  <div class="tcard">
+    <div class="toolrow">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Search sessions, projects, files, or PRs…" oninput="filterSessions()"></label>
+      <select class="sel" id="ftool" onchange="filterSessions()"><option>All tools</option><option>Claude Code</option><option>Claude.ai</option><option>Cursor</option><option>Codex</option><option>Gemini CLI</option></select>
+      <select class="sel" id="fproj" onchange="filterSessions()"><option>All projects</option><option>auth-service</option><option>billing</option><option>gateway</option><option>ostrich</option></select>
+      <select class="sel"><option>Any tokens</option><option>&lt;100k</option><option>100k–300k</option><option>&gt;300k</option></select>
+    </div>
+    <div id="tblwrap"><table><thead><tr><th>Session ID</th><th>Session name</th><th>Project</th><th>Turns</th><th>AI tool</th><th>Tokens</th><th>Outcome</th></tr></thead>
+    <tbody id="tbody">${SESSIONS.map(row).join('')}</tbody></table></div>
+  </div>`;
+ scrollTop();
+}
+function filterSessions(){
+ const q=($('#q').value||'').toLowerCase(), tool=$('#ftool').value, proj=$('#fproj').value;
+ if(proj==='ostrich'){renderEmpty('retention');return}
+ const rows=SESSIONS.filter(s=>
+   (tool==='All tools'||s.tool===tool)&&(proj==='All projects'||s.proj===proj)&&
+   (!q||`${s.id} ${s.nm} ${s.proj}`.toLowerCase().includes(q)));
+ const row=s=>`<tr class="srow" onclick="${s.trace?`openTrace('${s.trace}','')`:`go('session')`}">
+   <td><span class="sid">${s.id}</span></td>
+   <td><span class="snm">${s.nm}</span><br><span class="sdt">${s.dt}</span><div class="stg">${s.tags.map(t=>`<span class="mini ${t[1]}">${t[0]}</span>`).join('')}</div></td>
+   <td>${s.proj}</td><td class="num">${s.t}</td>
+   <td><span class="tool"><i style="background:${s.tc}"></i>${s.tool}</span></td>
+   <td class="num">${s.tok}</td><td><span class="outc ${s.out[1]}">${s.out[0]}</span></td></tr>`;
+ $('#tblwrap').innerHTML=rows.length?`<table><thead><tr><th>Session ID</th><th>Session name</th><th>Project</th><th>Turns</th><th>AI tool</th><th>Tokens</th><th>Outcome</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table>`
+  :`<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div><b>No sessions match your filters</b><p>Try a different search, or clear the filters.</p><button class="bt" onclick="vSessions()">Clear filters</button></div>`;
+}
+function renderEmpty(){
+ $('#tblwrap').innerHTML=`<div class="empty"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="M10 11v5M14 11v5"/></svg></div>
+  <b>This project's history is gone, and that's worth saying plainly</b>
+  <p>The AI tool's own cleanup deleted <b>ostrich</b>'s sessions before capture was turned on. There is nothing to recover. From today, new sessions on this project are being kept.</p>
+  <button class="bt dark" onclick="vSessions()">See what's being captured now</button></div>`;
+}
+function vSession(){
+ crumb('Sessions');
+ content.innerHTML=`
+  <button class="back" onclick="go('sessions')">← Back to sessions</button>
+  <div class="hero"><div class="eyebrow">SS-2847 · <span class="mini clean">CLEAN</span> · MERGED IN PR #4421</div>
+    <h1>JWT refresh token expiry: fix and verify</h1>
+    <div class="ds">A clean session. Four turns from bug report to verified fix: the off-by-one in token expiry was diagnosed in turn 2, and a regression test was added before merging.</div>
+  </div>
+  <div class="statrow">
+    <div><div class="lb">Started</div><div class="vl">Apr 28 · 14:22</div><div class="sb2">ended 14:51 · 29 min</div></div>
+    <div><div class="lb">Turns</div><div class="vl">4</div><div class="sb2">top quartile for auth-service</div></div>
+    <div><div class="lb">Tokens consumed</div><div class="vl">120k</div><div class="sb2">1 session</div></div>
+    <div><div class="lb">Library candidate</div><div class="vl" style="color:var(--ok)">Yes</div><div class="sb2">Claude flagged the closing pattern</div></div>
+  </div>
+  <div class="sect"><h2>Intelligences derived from this session</h2><p>Each one is clickable; the score always shows its reasoning.</p></div>
+  <div class="intel-chips">
+    ${[['Prompt Specificity','strong'],['Examples & Output Format','strong'],['Schema & Convention','strong'],['Verification Discipline','strong'],['Turns-to-Completion','strong'],['Context Pruning','developing'],['Compliance-Path Rigor','developing'],['Blind Spot Mirror','weak']]
+      .map(c=>`<span class="ic2" onclick="go('intel')">${c[0]} ${lvl(c[1])}</span>`).join('')}
+  </div>
+  <div class="sect"><h2>The trace</h2><p>The conversation, kept verbatim: structure overlaid, nothing paraphrased.</p></div>
+  <div class="trace">
+    <div class="tstamp">Session 1 · Apr 28, 14:22 → 14:51 · Auth middleware diagnosis & fix · 4 turns · clean</div>
+    <div class="turn"><div class="th2"><span class="who you">YOU · 14:22</span><span class="tt2">turn 1</span><span class="fl2 mini l4">WHY THIS SCORED L4</span></div>
+      <p>"Refresh tokens are expiring one hour early in prod. Constraint: don't touch the signing keys, rotate is next sprint. Acceptance: existing sessions must survive the fix. Suspect the exp math in auth/refresh.ts."</p>
+      <div class="note"><b>Why this scored L4:</b> goal, constraint, acceptance criteria, and a starting hypothesis: the assistant never had to guess the brief.</div></div>
+    <div class="turn"><div class="th2"><span class="who ai">CLAUDE · 14:24</span><span class="tt2">turn 2</span></div>
+      <p>Two hypotheses: a UTC/local mismatch in expiry comparison, or seconds-vs-milliseconds in the exp claim. The second reproduces your exact one-hour drift: <code>refresh.ts:41</code> multiplies an already-ms value.</p></div>
+    <div class="turn"><div class="th2"><span class="who you">YOU · 14:38</span><span class="tt2">turn 3</span></div>
+      <p>"Applied the fix. Test passes locally. Add a regression test that pins expiry to a fixed clock so this can't silently return."</p></div>
+    <div class="turn"><div class="th2"><span class="who ai">CLAUDE · 14:42</span><span class="tt2">turn 4</span></div>
+      <p>Regression test added with a frozen clock at the exact boundary. 12 of 12 auth tests pass. Ready to merge, PR #4421 updated.</p></div>
+  </div>`;
+ scrollTop();
+}
+function vTrace(sidKey,turn){
+ const tr=TRACES[sidKey]||TRACES['acme-payments'];
+ const hi=parseInt(turn,10)||0;
+ crumb('Session trace');
+ const M=tr.turns.length;
+ const rows=tr.turns.map((x,i)=>{
+  const n=i+1,hl=n===hi;
+  if(hl){return `<div class="turn hl" id="turn-${n}">
+    <div class="th2"><span class="who you">YOU · ${x.tm}</span><span class="tt2">turn ${n} of ${M}</span><span class="fl2 hl-flag">receipt points here</span></div>
+    <p>"${x.you}"</p>
+    <div class="worked">worked · ${x.worked}</div>
+    <div class="th2" style="margin:2px 0 5px"><span class="who ai">CLAUDE</span></div>
+    <p>${x.ai}</p>
+  </div>`;}
+  return `<div class="turn" id="turn-${n}">
+    <div class="th2"><span class="who you">YOU · ${x.tm}</span><span class="tt2">turn ${n} of ${M}</span></div>
+    <p>"${x.you}"</p>
+    <button class="turn-more" onclick="toggleTurn(this)">show reply</button>
+    <div class="turn-rest">
+    <div class="worked">worked · ${x.worked}</div>
+    <div class="th2" style="margin:2px 0 5px"><span class="who ai">CLAUDE</span></div>
+    <p>${x.ai}</p>
+    </div>
+  </div>`;
+ }).join('');
+ content.innerHTML=`
+  <button class="back" onclick="go('insights')">← Back to Daily Insights</button>
+  <button class="back" onclick="go('sessions')" style="margin-left:14px">All sessions</button>
+  <div class="hero"><div class="eyebrow">${tr.sid} · ${tr.proj.toUpperCase()} · <span class="mini ${tr.mini[1]}">${tr.mini[0].toUpperCase()}</span> · ${tr.outLabel}</div>
+    <h1>${tr.title}</h1>
+    <div class="ds">${tr.sum}</div>
+  </div>
+  <div class="statrow">
+    <div><div class="lb">Started</div><div class="vl">${tr.date} · ${tr.start}</div><div class="sb2">ended ${tr.end} · ${tr.dur}</div></div>
+    <div><div class="lb">Turns</div><div class="vl">${M}</div><div class="sb2">${tr.turnNote}</div></div>
+    <div><div class="lb">Tokens consumed</div><div class="vl">${tr.tokens}</div><div class="sb2">1 session</div></div>
+    <div><div class="lb">Outcome</div><div class="vl">${tr.out}</div><div class="sb2">${tr.outNote}</div></div>
+  </div>
+  <div class="sect"><h2>The trace</h2><p>Every turn kept verbatim, nothing paraphrased.${hi?' The highlighted turn is the exact moment the receipt points to.':''}</p></div>
+  <div class="trace">
+    <div class="tstamp">${tr.stamp}</div>
+    ${rows}
+  </div>`;
+ scrollTop();
+ if(hi){setTimeout(()=>{const el=document.getElementById('turn-'+hi);if(el)el.scrollIntoView({behavior:'auto',block:'center'})},60)}
+}
+function vLibrary(filter='All'){
+ crumb('Library');
+ const cats=['All','Debugging','Implementation','Architecture','Context','Review'];
+ const cards=LIB.filter(l=>filter==='All'||l[3]===filter).map(l=>`
+  <div class="lcard"><div class="lt"><b>${l[0]}</b><span class="uses ${l[2]}">${l[1]}</span></div>
+   <pre>${l[4]}</pre>
+   <div class="lf">Saved Apr 28 · ${l[3]} · from <a href="#" onclick="go('session');return false" style="margin-left:4px">${l[5]}</a><button class="bt" onclick="copyTpl(this,\`${l[4].replace(/`/g,'')}\`)">Copy</button></div></div>`).join('');
+ content.innerHTML=`
+  <div class="phead"><h1>Library</h1><div class="sub">6 templates saved · 31 total uses · your personal prompt playbook.</div></div>
+  <div class="chips">${cats.map(c=>`<button class="fchip ${c===filter?'on':''}" onclick="vLibrary('${c}')">${c}</button>`).join('')}</div>
+  <div class="lgrid">${cards||'<p style="color:var(--muted)">Nothing in this category yet.</p>'}</div>`;
+ scrollTop();
+}
+function copyTpl(btn,text){
+ (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>{},()=>{});
+ btn.textContent='Copied ✓';toast('Template copied to clipboard');setTimeout(()=>btn.textContent='Copy',1600);
+}
+function vWeekly(){
+ crumb('Weekly deep dive');
+ const spark=(vals,hi)=>'<div class="spark">'+vals.map((v,i)=>`<i style="height:${v}%" class="${i===hi?'hi':''}"></i>`).join('')+'</div>';
+ content.innerHTML=`
+  <div class="phead"><h1>Weekly deep dive</h1><div class="sub">May 5 – May 9 · how your memory, and your habits, moved this week.</div></div>
+  <div class="sparkrow">
+    <div class="sparkcard"><div class="lb">Specificity score</div><div class="val">4.0 <span style="font-size:12px;color:var(--ok);font-weight:600">crossed the 3.5 threshold</span></div>${spark([62,62,62,62,78],4)}</div>
+    <div class="sparkcard"><div class="lb">Correction rate</div><div class="val">19.8% <span style="font-size:12px;color:var(--ok);font-weight:600">improving all week</span></div>${spark([88,82,79,78,74],4)}</div>
+    <div class="sparkcard"><div class="lb">Episodes captured</div><div class="val">5 <span style="font-size:12px;color:var(--muted);font-weight:500">vs ~1–2 in a typical week</span></div>${spark([30,30,30,10,60],4)}</div>
+  </div>
+  <div class="wktbl"><div class="wh">WEEK'S MEMORY EVOLUTION · KEY METRICS TRACKED ACROSS 5 WORKING DAYS</div>
+    <table><thead><tr><th>Metric</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Trend</th><th>Baseline</th></tr></thead><tbody>
+      <tr><td>Overall corr. rate</td><td>21.7%</td><td><b>20.9%</b></td><td><b>20.2%</b></td><td>20.1%</td><td><b>19.8%</b></td><td class="good tr-note">&#8595; Improving</td><td>22%</td></tr>
+      <tr><td>Debug corr. rate</td><td class="bad">41%</td><td class="good">17%</td><td>–</td><td>–</td><td>–</td><td class="tr-note" style="color:var(--dev)">1 data point</td><td>41%</td></tr>
+      <tr><td>Specificity score</td><td>3.9</td><td>3.9</td><td>3.9</td><td>3.9</td><td><b>4.0</b></td><td class="good tr-note">&#8593; Threshold</td><td>3.5</td></tr>
+      <tr><td>Active decisions</td><td>11</td><td>11</td><td><b>12</b></td><td><b>13</b></td><td><b>14</b></td><td class="tr-note" style="color:#6d28d9">+3 this week</td><td>–</td></tr>
+      <tr><td>Episodes captured</td><td><b>+1</b></td><td><b>+1</b></td><td><b>+1</b></td><td>+0</td><td><b>+2</b></td><td class="good tr-note">5 this week</td><td>~1–2/wk</td></tr>
+      <tr><td>Planning sessions</td><td><b>1</b></td><td>0</td><td><b>1</b></td><td>0</td><td><b>1</b></td><td class="good tr-note">3 this week</td><td>~0–1/wk</td></tr>
+    </tbody></table>
+  </div>
+  <div class="sect"><h2>Decisions that entered your memory this week</h2><p>The registry writes itself from your sessions; every entry links to the moment it was decided.</p></div>
+  <div class="decreg">
+    <div class="decrow" style="cursor:pointer" onclick="openTrace('acme-payments','6')"><span class="dd">Mon</span><span class="dt2">Cache at the API layer, never touch the legacy schema<small>acme-payments · from session SS-2903 · turn 6</small></span><span class="new">NEW</span><span></span></div>
+    <div class="decrow"><span class="dd">Thu</span><span class="dt2">Exports stream beyond 10k rows, hard-cap 50k per file<small>payments-dashboard · from session SS-2851</small></span><span class="new">NEW</span></div>
+    <div class="decrow"><span class="dd">Wed</span><span class="dt2">Webhooks must be idempotent, keys derived from event id<small>billing · from session SS-2705</small></span><span class="new">NEW</span></div>
+    <div class="decrow"><span class="dd">Mon</span><span class="dt2">Secrets by env-var name only, never inline in prompts<small>org rule · confirmed after SS-2733</small></span><span></span></div>
+  </div>`;
+ scrollTop();
+}
+function vTeam(){
+ crumb('Team patterns');
+ content.innerHTML=`
+  <div class="phead"><h1>Team patterns</h1><div class="sub">Payments squad · last 30 days · patterns across 6 people, built from aggregates only.</div></div>
+  <div class="tcard">
+    <div class="aggrow"><div class="al"><b>Constraints named up front</b><span>share of sessions that start well-specified</span></div><div class="bar"><i style="width:74%"></i></div><div class="an">74%</div></div>
+    <div class="aggrow"><div class="al"><b>Decisions captured</b><span>architecture & approach calls preserved this month</span></div><div class="bar"><i style="width:58%"></i></div><div class="an">23</div></div>
+    <div class="aggrow"><div class="al"><b>Verification discipline</b><span>sessions ending with an explicit verification turn</span></div><div class="bar"><i style="width:66%"></i></div><div class="an">66%</div></div>
+    <div class="aggrow"><div class="al"><b>Knowledge concentration</b><span>people who understand the billing service</span></div><div class="bar"><i style="width:16%;background:var(--weak)"></i></div><div class="an" style="color:var(--weak)">only 1</div></div>
+    <div class="lockrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      Raw sessions are not visible at this level; there is no drill-down to open.
+      <button class="dead" onclick="toast('Not a permission: the capability does not exist at this level.')">Open a session</button></div>
+  </div>
+  <p style="font-size:12.5px;color:var(--muted);margin-top:14px">Privacy is structural: leads see patterns, never transcripts. A developer's raw sessions are visible only to the developer themselves.</p>`;
+ scrollTop();
+}
+/* ---------------- router ---------------- */
+const state={nav:'insights'};
+function showDyn(on){
+ homeView.classList.toggle('hidden',on);
+ content.classList.toggle('hidden',!on);
+ if(!on)content.innerHTML='';
+}
+function vHome(){crumb('Daily Insights');scrollTop()}
+function go(view){
+ if(view&&view.indexOf('trace')===0){
+  const p=view.split('/');
+  state.nav='sessions';showDyn(true);vTrace(p[1],p[2]);
+  return;
+ }
+ const map={insights:()=>{state.nav='insights';showDyn(false);vHome()},
+  intelligences:()=>{state.nav='intelligences';showDyn(true);vIntel()},
+  intel:()=>{state.nav='intelligences';showDyn(true);vIntelDetail()},
+  sessions:()=>{state.nav='sessions';showDyn(true);vSessions()},
+  session:()=>{state.nav='sessions';showDyn(true);vSession()},
+  library:()=>{state.nav='library';showDyn(true);vLibrary()},
+  team:()=>{state.nav='team';showDyn(true);vTeam()},
+  weekly:()=>{state.nav='weekly';showDyn(true);vWeekly()},
+  empty:()=>{state.nav='sessions';showDyn(true);vSessions();setTimeout(()=>{$('#fproj').value='ostrich';renderEmpty()},0)}};
+ (map[view]||map.insights)();
+}
+function openSession(e){e.stopPropagation();go('session')}
+document.querySelectorAll('.nit').forEach(n=>n.addEventListener('click',()=>{
+ const h='#'+n.dataset.nav;
+ if(location.hash===h){go(n.dataset.nav)}else{location.hash=h}
+}));
+$('#kebab').addEventListener('click',e=>{e.stopPropagation();$('#umenu').classList.toggle('open')});
+document.addEventListener('click',()=>$('#umenu').classList.remove('open'));
+/* hash routing for screenshots/deep links */
+go((location.hash||'#insights').slice(1));
+window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
+</script>
+</body>
+</html>

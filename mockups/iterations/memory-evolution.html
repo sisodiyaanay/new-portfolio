@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Second Brain — Memory Evolution Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F3EF;
+    --surface: #FFFFFF;
+    --surface2: #EEEBE4;
+    --surface3: #E8E4DC;
+    --border: #DDD9D0;
+    --text: #1C1A17;
+    --text-2: #5A5650;
+    --text-3: #9C9890;
+    --acc: #1B5E40;
+    --acc-light: #E8F3EE;
+    --acc-mid: #C5DDD0;
+    --warn: #7B4A00;
+    --warn-light: #FDF0DC;
+    --warn-mid: #F0D090;
+    --info: #1A3D6B;
+    --info-light: #E6EEF7;
+    --danger: #8B2020;
+    --danger-light: #FAEAEA;
+    --purple: #4A2D7A;
+    --purple-light: #EDE8F7;
+    --shadow-s: 0 1px 3px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.05);
+    --shadow-m: 0 2px 8px rgba(0,0,0,0.09), 0 6px 24px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* TOP HEADER */
+  .top {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 22px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .top-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .top-sub {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+
+  .top-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .week-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    background: var(--surface2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* DAY NAV */
+  .day-nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    display: flex;
+    gap: 0;
+    position: sticky;
+    top: 65px;
+    z-index: 190;
+  }
+
+  .day-tab {
+    padding: 14px 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-3);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .day-tab .day-name {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .day-tab .day-desc {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .day-tab:hover { color: var(--text-2); }
+
+  .day-tab.active {
+    color: var(--acc);
+    border-bottom-color: var(--acc);
+  }
+
+  .day-tab.active .day-name { color: var(--acc); }
+
+  /* MAIN */
+  .main {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 36px 32px;
+  }
+
+  /* Day pages */
+  .day-page {
+    display: none;
+  }
+
+  .day-page.active {
+    display: block;
+  }
+
+  /* Day header */
+  .day-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    margin-bottom: 28px;
+    gap: 24px;
+  }
+
+  .day-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .day-header p {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.6;
+    max-width: 600px;
+  }
+
+  .day-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+  }
+
+  .stat-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .stat-chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Sessions from that day */
+  .sessions-section {
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    color: var(--text-3);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .session-strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    gap: 16px;
+    align-items: start;
+    box-shadow: var(--shadow-s);
+  }
+
+  .session-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-3);
+    padding-top: 2px;
+  }
+
+  .session-content h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .session-content p {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+
+  .session-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+  }
+
+  .session-shape {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .shape-linear { background: var(--acc-light); color: var(--acc); }
+  .shape-spiral { background: var(--danger-light); color: var(--danger); }
+  .shape-exploratory { background: var(--warn-light); color: var(--warn); }
+  .shape-recovery { background: var(--purple-light); color: var(--purple); }
+
+  .session-corr {
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Signal tags on session */
+  .signal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .stag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .stag-d { background: var(--info-light); color: var(--info); }
+  .stag-r { background: var(--danger-light); color: var(--danger); }
+  .stag-l { background: var(--acc-light); color: var(--acc); }
+  .stag-w { background: var(--warn-light); color: var(--warn); }
+  .stag-n { background: var(--purple-light); color: var(--purple); }
+
+  /* Memory update section */
+  .memory-update {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-m);
+  }
+
+  .mu-header {
+    padding: 18px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mu-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .mu-header span {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  /* Dimension update rows */
+  .dim-update {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .dim-update:last-child {
+    border-bottom: none;
+  }
+
+  .dim-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  .dim-icon2 {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .dim-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Change items */
+  .change {
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+
+  .change-icon {
+    font-size: 13px;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .change-added { background: var(--acc-light); color: #1A3D2A; }
+  .change-updated { background: var(--info-light); color: #0E2A4A; }
+  .change-flagged { background: var(--warn-light); color: #4A2E00; }
+  .change-none { background: var(--surface2); color: var(--text-3); }
+
+  .change-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-right: 4px;
+    opacity: 0.7;
+  }
+
+  /* Episode + semantic captured */
+  .captures-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .capture-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-s);
+  }
+
+  .capture-box-header {
+    padding: 12px 18px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .capture-box-body {
+    padding: 16px 18px;
+  }
+
+  .capture-box-body h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .capture-box-body p {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+
+  .capture-empty {
+    padding: 20px 18px;
+    font-size: 13px;
+    color: var(--text-3);
+    font-style: italic;
+    text-align: center;
+  }
+
+  /* Working memory snapshot */
+  .wm-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-s);
+  }
+
+  .wm-header {
+    padding: 12px 18px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-3);
+  }
+
+  .wm-row {
+    display: grid;
+    grid-template-columns: 130px 1fr auto;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .wm-row:last-child { border-bottom: none; }
+
+  .wm-project {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  .wm-focus {
+    color: var(--text-2);
+    font-size: 13px;
+  }
+
+  .momentum-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  .m-high { background: var(--acc-light); color: var(--acc); }
+  .m-normal { background: var(--info-light); color: var(--info); }
+  .m-cooling { background: var(--warn-light); color: var(--warn); }
+  .m-stalled { background: var(--danger-light); color: var(--danger); }
+  .m-new { background: var(--purple-light); color: var(--purple); }
+
+  /* Digest preview */
+  .digest-preview {
+    background: linear-gradient(135deg, #F8F5F1 0%, var(--surface) 100%);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-m);
+  }
+
+  .dp-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dp-header h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  .dp-header span {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .dp-body {
+    padding: 16px 22px;
+  }
+
+  .dp-insight {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+
+  .dp-insight:last-child { border-bottom: none; }
+
+  .dp-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .dp-insight-content .cat {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 3px;
+  }
+
+  .dp-insight-content .text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+
+  .dp-insight-content .action {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .dp-focus {
+    background: var(--acc);
+    color: white;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  /* Memory evolution tracker */
+  .evo-tracker {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-s);
+  }
+
+  .evo-header {
+    padding: 14px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-3);
+  }
+
+  .evo-row {
+    display: grid;
+    grid-template-columns: 150px repeat(7, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .evo-row:last-child { border-bottom: none; }
+
+  .evo-cell {
+    padding: 10px 10px;
+    font-size: 12px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .evo-cell:last-child { border-right: none; }
+
+  .evo-label {
+    font-weight: 600;
+    color: var(--text-2);
+    justify-content: flex-start;
+    padding-left: 14px;
+    font-size: 12px;
+  }
+
+  .evo-header-row .evo-cell {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .val-up { color: var(--acc); font-weight: 600; }
+  .val-down { color: var(--danger); font-weight: 600; }
+  .val-same { color: var(--text-3); }
+  .val-new { color: var(--purple); font-weight: 600; }
+  .val-flag { color: var(--warn); font-weight: 600; }
+
+  .score-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-top: 3px;
+    overflow: hidden;
+  }
+
+  .score-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--acc);
+    transition: width 0.3s;
+  }
+
+  /* Nav buttons */
+  .day-nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .nav-btn:hover {
+    background: var(--acc);
+    color: white;
+    border-color: var(--acc);
+  }
+
+  .nav-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .nav-btn:disabled:hover {
+    background: var(--surface);
+    color: var(--text-2);
+    border-color: var(--border);
+  }
+
+  @media (max-width:768px) {
+    .day-nav { padding: 0 16px; overflow-x: auto; }
+    .main { padding: 24px 16px; }
+    .dim-update { grid-template-columns: 1fr; }
+    .captures-grid { grid-template-columns: 1fr; }
+    .wm-row { grid-template-columns: 1fr; }
+    .evo-row { display: none; }
+    .top { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="top-title">Memory Evolution — Week of May 6, 2026</div>
+    <div class="top-sub">How Aarav's memory updates every day — and what the digest looks like each morning</div>
+  </div>
+  <div class="top-right">
+    <div class="week-label">Aarav Sharma · predict-switch week</div>
+  </div>
+</div>
+
+<div class="day-nav">
+  <div class="day-tab active" onclick="showDay(0)">
+    <div class="day-name">Monday</div>
+    <div class="day-desc">May 6</div>
+  </div>
+  <div class="day-tab" onclick="showDay(1)">
+    <div class="day-name">Tuesday</div>
+    <div class="day-desc">May 7</div>
+  </div>
+  <div class="day-tab" onclick="showDay(2)">
+    <div class="day-name">Wednesday</div>
+    <div class="day-desc">May 8</div>
+  </div>
+  <div class="day-tab" onclick="showDay(3)">
+    <div class="day-name">Thursday</div>
+    <div class="day-desc">May 9</div>
+  </div>
+  <div class="day-tab" onclick="showDay(4)">
+    <div class="day-name">Friday</div>
+    <div class="day-desc">May 10</div>
+  </div>
+  <div class="day-tab" onclick="showDay(5)">
+    <div class="day-name">Saturday</div>
+    <div class="day-desc">May 11</div>
+  </div>
+  <div class="day-tab" onclick="showDay(6)">
+    <div class="day-name">Sunday</div>
+    <div class="day-desc">May 12</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ======= MONDAY ======= -->
+<div class="day-page active" id="day-0">
+  <div class="day-header">
+    <div>
+      <h2>Monday, May 6</h2>
+      <p>Strong start to the week. Architecture session in the morning followed by clean implementation work on predict-switch. One debugging spiral in the afternoon. Memory sees a new high-quality architecture session — confirms existing template pattern.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> 3 sessions · 52 prompts</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--info)"></div> predict-switch primary</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--warn)"></div> 1 correction spiral</div>
+    </div>
+  </div>
+
+  <div class="sessions-section">
+    <div class="section-title">Sessions — what actually happened</div>
+
+    <div class="session-strip">
+      <div class="session-time">10:24 AM<br>74 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Architecture</h4>
+        <p>Designed the data pipeline architecture for predict-switch. Opened with technology + constraints + scope in first prompt. Produced clear structural decisions about service layout and API boundaries.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Decision Made</span>
+          <span class="stag stag-l">Lesson Applied</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 8% ↓↓ baseline</span>
+      </div>
+    </div>
+
+    <div class="session-strip">
+      <div class="session-time">12:01 PM<br>48 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Implementation</h4>
+        <p>Built the service layer following the morning architecture decisions. Explicit constraint "service-level envs" referenced in first prompt — evidence of decision application. Smooth, few corrections.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Constraint Applied</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 14% ↓ baseline</span>
+      </div>
+    </div>
+
+    <div class="session-strip">
+      <div class="session-time">2:45 PM<br>61 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Debugging</h4>
+        <p>Debugging session on the database connection layer. Hit a correction spiral around prompt 8 — kept adjusting the connection string rather than stopping to diagnose the environment variable issue.</p>
+        <div class="signal-tags">
+          <span class="stag stag-w">Correction Spiral</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-spiral">Spiral</span>
+        <span class="session-corr">Corr: 41% ↑↑ baseline</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="memory-update">
+    <div class="mu-header">
+      <h3>Memory Update — what the pipeline learned tonight</h3>
+      <span>Runs ~11 PM nightly</span>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--acc-light);color:var(--acc)">✍</div>Prompting</div>
+      <div class="dim-content">
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Specificity score: 3.8 → 3.9 (rolling avg). Architecture session opened with full context — reinforces existing strong pattern.</span></div>
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Confirmed</span> Architecture init template used again successfully. Usage count: 5 of last 6 architecture sessions. Template confidence now: High.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--info-light);color:var(--info)">⏱</div>Session Efficiency</div>
+      <div class="dim-content">
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Overall correction rate baseline: 22% → 21.7% (rolling avg — small improvement from clean morning sessions).</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Debugging baseline confirmed at 41% — today's spiral was exactly on baseline. Not worse, but pattern persisting.</span></div>
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Observed</span> Architecture session → Implementation session same day: correction rate in implementation was 14% vs 28% average. Preceded-by-architecture effect confirmed again (7th instance).</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--warn-light);color:var(--warn)">📋</div>Decisions</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Appended</span> New decision: Service boundaries defined for predict-switch pipeline — service A handles ingestion, service B handles prediction. Decision #12 in registry.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Reinforced</span> Service-level env preference — applied again in implementation session (prompt 2). Principle strength: Strong.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--acc-light);color:var(--acc)">🤝</div>AI Collaboration</div>
+      <div class="dim-content">
+        <div class="change change-flagged"><span class="change-icon">⚠</span><span><span class="change-label">Flagged</span> Debugging spiral pattern seen again — prompt 8 reached without reframing. Over-reliance signal count this month: 4. Flagged for digest.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Collaboration mode in implementation: Director (consistent). No change needed.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="captures-grid">
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">📖 Episode Captured</div>
+      <div class="capture-box-body">
+        <h4>Architecture → Implementation pipeline — clean run</h4>
+        <p>Fourth confirmed instance of architecture session directly preceding implementation with measurably lower correction rate. Pattern strong enough to add to episode store as a high-quality workflow episode. Value: ~25 min saved vs typical implementation session.</p>
+      </div>
+    </div>
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--text-3)">⊘ Semantic Index</div>
+      <div class="capture-empty">No new solution pairs or dead ends today. Debugging session was a spiral but did not fully resolve — problem is still open. Will capture if resolved tomorrow.</div>
+    </div>
+  </div>
+
+  <div class="wm-box">
+    <div class="wm-header">Working Memory — current project state</div>
+    <div class="wm-row">
+      <div class="wm-project">predict-switch</div>
+      <div class="wm-focus">Architecture defined this morning. Service layer built. DB connection debugging still open — connection string / env variable issue unresolved.</div>
+      <div><span class="momentum-pill m-high">High Momentum</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">acme.dev</div>
+      <div class="wm-focus">No sessions today. Last session 3 days ago — exploration phase.</div>
+      <div><span class="momentum-pill m-cooling">Cooling</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">sports-brain</div>
+      <div class="wm-focus">No sessions in 21 days. Stalled.</div>
+      <div><span class="momentum-pill m-stalled">Stalled — 21 days</span></div>
+    </div>
+  </div>
+
+  <div class="digest-preview">
+    <div class="dp-header">
+      <h4>Tuesday morning digest — what Aarav reads at 9 AM</h4>
+      <span>Generated from Monday's sessions</span>
+    </div>
+    <div class="dp-body">
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--warn-light);color:var(--warn)">🔄</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--warn)">Correction Loop</div>
+          <div class="text">Yesterday's debugging session ran 28 prompts — your baseline is 18. The spiral started at prompt 8. You kept adjusting the connection string rather than stopping to check the env variable configuration first.</div>
+          <div class="action" style="color:var(--warn)">→ Before debugging today: list 3 possible causes before writing a single corrective prompt.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--acc-light);color:var(--acc)">✓</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--acc)">Good Session</div>
+          <div class="text">Architecture session was clean — 9 prompts, 8% correction. Same template as the Feb 24th init session that produced the voice agent design. That structure keeps working.</div>
+          <div class="action" style="color:var(--acc)">→ Your next implementation session: open with the same structure — tech + constraints + scope in one prompt.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--surface2);color:var(--text-3)">○</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--text-3)">Open Thread</div>
+          <div class="text">Yesterday's debugging session ended without resolution — the DB connection issue is still open. The session ended without a clear conclusion.</div>
+          <div class="action" style="color:var(--text-3)">→ Start today by resolving this before opening any new work.</div>
+        </div>
+      </div>
+      <div class="dp-focus">Today's focus: Diagnose before you correct. List possible causes first — then prompt.</div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" disabled>← Previous day</button>
+    <button class="nav-btn" onclick="showDay(1)">Tuesday →</button>
+  </div>
+</div>
+
+<!-- ======= TUESDAY ======= -->
+<div class="day-page" id="day-1">
+  <div class="day-header">
+    <div>
+      <h2>Tuesday, May 7</h2>
+      <p>Aarav applied Monday's digest feedback — opened the debugging session by diagnosing before correcting. The DB connection resolved in 12 prompts (vs Monday's 28). Then a strong implementation session. Memory sees evidence the debugging suggestion worked.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> 2 sessions · 38 prompts</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> Digest feedback applied</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> DB issue resolved</div>
+    </div>
+  </div>
+
+  <div class="sessions-section">
+    <div class="section-title">Sessions — what actually happened</div>
+    <div class="session-strip">
+      <div class="session-time">10:10 AM<br>38 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Debugging (continued)</h4>
+        <p>Resolved yesterday's DB connection issue. Opened with a diagnostic prompt listing 3 possible causes. Identified the env variable misconfiguration in the second prompt. Resolved in 12 prompts total — well under baseline.</p>
+        <div class="signal-tags">
+          <span class="stag stag-l">Lesson Applied</span>
+          <span class="stag stag-l">Recovery Shape</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-recovery">Recovery</span>
+        <span class="session-corr">Corr: 17% ↓ baseline</span>
+      </div>
+    </div>
+    <div class="session-strip">
+      <div class="session-time">11:32 AM<br>54 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Implementation</h4>
+        <p>Built the prediction service layer. Gateway pattern referenced explicitly in the first prompt — applying the architectural constraint proactively. Clean, linear session with minimal corrections.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Constraint Applied</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 12% ↓↓ baseline</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="memory-update">
+    <div class="mu-header">
+      <h3>Memory Update — significant changes tonight</h3>
+      <span>Feedback loop detected — digest suggestion worked</span>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--info-light);color:var(--info)">⏱</div>Session Efficiency</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">★</span><span><span class="change-label">Notable</span> Debugging session resolved in 12 prompts after diagnostic-first approach — previous similar session took 28. This is a genuine behavioral shift. Flagged as potential milestone candidate for weekly growth ledger check.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Debugging correction rate this week: 17% (today) vs 41% (Monday). Both included in rolling avg. Trend direction: improving — but one session, monitoring needed.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--acc-light);color:var(--acc)">🤝</div>AI Collaboration</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">New Pattern</span> Diagnostic-before-correcting behavior observed in debugging session — opened with cause listing. This is new. Tracking to see if it persists.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Over-reliance signal count: no new instances today. Debugging mode: shifted from Follower toward Collaborator in today's session.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--warn-light);color:var(--warn)">📋</div>Decisions & Knowledge</div>
+      <div class="dim-content">
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Reinforced</span> Gateway pattern applied proactively in implementation first prompt — not in follow-up. Positive signal. Principle strength moving toward Very Strong.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="captures-grid">
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">📖 Episode Captured</div>
+      <div class="capture-box-body">
+        <h4>Diagnostic-first debugging — recovery session</h4>
+        <p>First confirmed instance of Aarav explicitly diagnosing before iterating in a debugging session. Opened with cause list, resolved in 12 prompts vs yesterday's 28. This episode captures what "debugging done differently" looks like for Aarav.</p>
+      </div>
+    </div>
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">🗂 Semantic Index</div>
+      <div class="capture-box-body">
+        <h4>Problem: DB env variable misconfiguration in containerised service</h4>
+        <p>Solution: Check env variable names against docker-compose config before adjusting connection string. Resolution: 2 prompts once correctly framed. Tags: postgresql, env-variables, docker, debugging, connection.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wm-box">
+    <div class="wm-header">Working Memory — updated snapshot</div>
+    <div class="wm-row">
+      <div class="wm-project">predict-switch</div>
+      <div class="wm-focus">DB connection resolved. Prediction service built. Both core services functional. Moving toward API layer integration next.</div>
+      <div><span class="momentum-pill m-high">High Momentum</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">acme.dev</div>
+      <div class="wm-focus">No sessions for 4 days. Likely background thinking phase.</div>
+      <div><span class="momentum-pill m-cooling">Cooling</span></div>
+    </div>
+  </div>
+
+  <div class="digest-preview">
+    <div class="dp-header">
+      <h4>Wednesday morning digest</h4>
+      <span>Generated from Tuesday's sessions</span>
+    </div>
+    <div class="dp-body">
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--purple-light);color:var(--purple)">↑</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--purple)">Growth Signal</div>
+          <div class="text">Yesterday's debugging suggestion worked. You diagnosed before correcting — resolved the DB issue in 12 prompts vs Monday's 28 on the same problem. That's a 57% reduction by changing the opening prompt structure.</div>
+          <div class="action" style="color:var(--purple)">→ Same approach today: list causes before iterating. See if it holds across a different kind of debugging problem.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--info-light);color:var(--info)">⚙</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--info)">Workflow</div>
+          <div class="text">You've had 5 sessions on predict-switch in 2 days. No session has touched error handling. You're approaching API layer integration — this is the boundary where error handling decisions need to be made.</div>
+          <div class="action" style="color:var(--info)">→ One short session: "What are the failure modes at the API boundary for this service?" before you build the integration.</div>
+        </div>
+      </div>
+      <div class="dp-focus">Today's focus: Map the failure modes before building the integration layer.</div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" onclick="showDay(0)">← Monday</button>
+    <button class="nav-btn" onclick="showDay(2)">Wednesday →</button>
+  </div>
+</div>
+
+<!-- ======= WEDNESDAY ======= -->
+<div class="day-page" id="day-2">
+  <div class="day-header">
+    <div>
+      <h2>Wednesday, May 8</h2>
+      <p>Mid-week shift. Aarav opened with the error handling session the digest suggested — a first for predict-switch. Then exploratory work on acme.dev restarted. Memory sees both a new absence signal resolved and a new project activation.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> 3 sessions · 44 prompts</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--purple)"></div> acme.dev reactivated</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> Error handling added</div>
+    </div>
+  </div>
+
+  <div class="sessions-section">
+    <div class="section-title">Sessions — what actually happened</div>
+    <div class="session-strip">
+      <div class="session-time">10:05 AM<br>31 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Error Handling</h4>
+        <p>Dedicated session mapping failure modes before building the API integration. First time a proactive error handling session has appeared on predict-switch after 14 implementation sessions. Produced clear failure mode list and handling strategy.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Decision Made</span>
+          <span class="stag stag-l">Absence Resolved</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 9% — clean</span>
+      </div>
+    </div>
+    <div class="session-strip">
+      <div class="session-time">11:22 AM<br>42 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Implementation</h4>
+        <p>Built the API integration layer with error handling baked in from the start. Referenced the failure mode session explicitly. Notably smoother than previous integration sessions — pre-planning paid off.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Constraint Applied</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 16% ↓ baseline</span>
+      </div>
+    </div>
+    <div class="session-strip">
+      <div class="session-time">2:30 PM<br>28 min</div>
+      <div class="session-content">
+        <h4>acme.dev · Exploration</h4>
+        <p>Restarted acme.dev work after 5 days away. Exploration session evaluating data pipeline approach — OpenSearch vs PostgreSQL for the primary data store. No decision made yet, options being compared.</p>
+        <div class="signal-tags">
+          <span class="stag stag-n">New Domain Entry</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-exploratory">Exploratory</span>
+        <span class="session-corr">Corr: 24% — normal</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="memory-update">
+    <div class="mu-header">
+      <h3>Memory Update — absence signal resolved, project state shift</h3>
+      <span>Two meaningful changes tonight</span>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--purple-light);color:var(--purple)">📚</div>Skill & Domains</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">✓</span><span><span class="change-label">Resolved</span> Absence signal for error handling on predict-switch CLOSED. First proactive error handling session appeared — before a bug forced it. This is a behavioral shift from reactive to proactive quality practice.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> OpenSearch added to domain map as Exploration phase (new). First session — low confidence, high question rate (21 questions in 28 min), which is expected for a new domain entry.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--warn-light);color:var(--warn)">📋</div>Decisions</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Appended</span> New decision: Error handling strategy for predict-switch API boundary — retry with exponential backoff, dead letter queue for failed predictions. Decision #13.</span></div>
+        <div class="change change-flagged"><span class="change-icon">?</span><span><span class="change-label">Open</span> Technology choice for acme.dev primary data store — OpenSearch vs PostgreSQL. Decision not yet made. Flagged as open thread in working memory.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--info-light);color:var(--info)">⏱</div>Workflow Habits</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">New Pattern</span> Planning session before integration session: first confirmed instance for predict-switch. Correction rate in subsequent implementation: 16% vs 28% average. Pattern holding.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Context switch: predict-switch → acme.dev in afternoon. Correction rate in acme.dev session (24%) vs baseline (22%) — minimal impact. Switch was well-spaced.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="captures-grid">
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">📖 Episode Captured</div>
+      <div class="capture-box-body">
+        <h4>First proactive error handling session — absence resolved</h4>
+        <p>After 14 implementation sessions with zero error handling, Aarav ran a dedicated failure mode mapping session before building the integration. This episode documents the shift from reactive to proactive quality practice — and the outcome (integration session ran at 16% correction vs 28% average).</p>
+      </div>
+    </div>
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--text-3)">⊘ Semantic Index</div>
+      <div class="capture-empty">No new entries. Exploration sessions don't produce solutions or dead ends — still evaluating options. Will capture when a decision is made.</div>
+    </div>
+  </div>
+
+  <div class="wm-box">
+    <div class="wm-header">Working Memory — two active projects now</div>
+    <div class="wm-row">
+      <div class="wm-project">predict-switch</div>
+      <div class="wm-focus">API integration layer built with error handling. Core functionality complete. Moving toward testing and deployment phase.</div>
+      <div><span class="momentum-pill m-high">High Momentum</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">acme.dev</div>
+      <div class="wm-focus">Reactivated. Evaluating OpenSearch vs PostgreSQL for primary data store. Decision pending.</div>
+      <div><span class="momentum-pill m-new">Reactivated</span></div>
+    </div>
+  </div>
+
+  <div class="digest-preview">
+    <div class="dp-header">
+      <h4>Thursday morning digest</h4>
+      <span>Generated from Wednesday's sessions</span>
+    </div>
+    <div class="dp-body">
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--purple-light);color:var(--purple)">↑</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--purple)">Growth</div>
+          <div class="text">You added error handling proactively yesterday — before any bug forced it. First time on predict-switch across 14 sessions. The integration session that followed ran at 16% correction vs your 28% average. Planning before building continues to work.</div>
+          <div class="action" style="color:var(--purple)">→ Same approach for the acme.dev data store decision — map the constraints before choosing the technology.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--warn-light);color:var(--warn)">📌</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--warn)">Past Relevant</div>
+          <div class="text">The acme.dev OpenSearch evaluation resembles the Feb 26th database decision — choosing a data technology for a new project. Last time you assumed column structure before checking. Same risk here: make sure you understand the actual data shape before choosing the store.</div>
+          <div class="action" style="color:var(--warn)">→ Inspect the actual data structure before the technology decision — not after.</div>
+        </div>
+      </div>
+      <div class="dp-focus">Today's focus: Understand the data before choosing the technology. Same lesson as Feb 26th — different project.</div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" onclick="showDay(1)">← Tuesday</button>
+    <button class="nav-btn" onclick="showDay(3)">Thursday →</button>
+  </div>
+</div>
+
+<!-- ======= THURSDAY ======= -->
+<div class="day-page" id="day-3">
+  <div class="day-header">
+    <div>
+      <h2>Thursday, May 9</h2>
+      <p>Slower day. One focused session on acme.dev data evaluation, then a short admin session. Memory records a quieter day — updates are minimal. Working memory notes predict-switch momentum holding even without activity.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--info)"></div> 2 sessions · 22 prompts</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--text-3)"></div> Light day</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> Data inspection done</div>
+    </div>
+  </div>
+
+  <div class="sessions-section">
+    <div class="section-title">Sessions — what actually happened</div>
+    <div class="session-strip">
+      <div class="session-time">10:45 AM<br>36 min</div>
+      <div class="session-content">
+        <h4>acme.dev · Exploration + Decision</h4>
+        <p>Applied Wednesday's digest insight — inspected the actual data structure before making the technology choice. Discovered the data is primarily key-value with some full-text search needs. Decision made: PostgreSQL with full-text search extensions over OpenSearch.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Decision Made</span>
+          <span class="stag stag-l">Lesson Applied</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 11% — clean</span>
+      </div>
+    </div>
+    <div class="session-strip">
+      <div class="session-time">2:15 PM<br>18 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Admin</h4>
+        <p>Short admin session — git cleanup, commit structure, README update. No significant technical work. Standard housekeeping.</p>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 5% — admin</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="memory-update">
+    <div class="mu-header">
+      <h3>Memory Update — decision captured, lesson reinforcement</h3>
+      <span>Quieter day — focused updates</span>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--warn-light);color:var(--warn)">📋</div>Decisions</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Appended</span> New decision: PostgreSQL with pg_trgm and ts_vector extensions for acme.dev — over OpenSearch. Reasoning captured: key-value data structure makes PostgreSQL sufficient, avoids separate search infrastructure. Decision #14.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--acc-light);color:var(--acc)">📚</div>Skill & Domains</div>
+      <div class="dim-content">
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> PostgreSQL full-text search added to domain map. Confidence: Low (first session). Adjacent to existing strong PostgreSQL knowledge — likely faster ramp-up.</span></div>
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Confirmed</span> Inspect-actual-data-before-deciding principle applied for the third time (Feb 26th DB columns, Mar 8th vendor schema, today). Principle strength: Very Strong. Three independent confirmations.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--info-light);color:var(--info)">⏱</div>Workflow</div>
+      <div class="dim-content">
+        <div class="change change-none"><span class="change-icon">—</span><span><span class="change-label">No Change</span> Lighter day — 2 sessions, 22 prompts. Well within normal range for Thursdays (historically lower density). No anomaly.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="captures-grid">
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">🗂 Semantic Index</div>
+      <div class="capture-box-body">
+        <h4>Technology selection: PostgreSQL for mixed key-value + search workload</h4>
+        <p>Problem: needed a data store for mostly key-value data with some full-text search. Evaluated OpenSearch. Decision: PostgreSQL + pg_trgm + ts_vector is sufficient and simpler. When to use this: avoid separate search infrastructure when PostgreSQL native search handles the query patterns.</p>
+      </div>
+    </div>
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--purple)">📖 Principle Reinforced</div>
+      <div class="capture-box-body">
+        <h4>"Inspect actual data before deciding on infrastructure"</h4>
+        <p>Third independent confirmation of this principle. First: PostgreSQL column structure (Feb 26). Second: vendor schema guidelines (Mar 8). Third: acme.dev data store decision (today). Principle promoted to Very Strong — surfaces in all relevant future sessions.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wm-box">
+    <div class="wm-header">Working Memory — clean state, both projects advancing</div>
+    <div class="wm-row">
+      <div class="wm-project">predict-switch</div>
+      <div class="wm-focus">Core services complete. API integration done. Light admin session today. No open threads.</div>
+      <div><span class="momentum-pill m-high">High Momentum</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">acme.dev</div>
+      <div class="wm-focus">Data store decided: PostgreSQL + extensions. Architecture phase next. Clean decision, reasoning captured.</div>
+      <div><span class="momentum-pill m-normal">Normal</span></div>
+    </div>
+  </div>
+
+  <div class="digest-preview">
+    <div class="dp-header">
+      <h4>Friday morning digest</h4>
+      <span>Generated from Thursday's sessions</span>
+    </div>
+    <div class="dp-body">
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--purple-light);color:var(--purple)">↑</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--purple)">Growth Pattern</div>
+          <div class="text">The "inspect data before deciding" lesson from Feb 26th just applied for the third time — this time proactively on acme.dev, before making the PostgreSQL vs OpenSearch call. The lesson has become a habit. Three independent data points confirm it.</div>
+          <div class="action" style="color:var(--purple)">→ This is now a principle. Worth writing it down explicitly: inspect actual data structure before choosing infrastructure.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--info-light);color:var(--info)">⚙</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--info)">Workflow</div>
+          <div class="text">predict-switch has had no new feature sessions since Wednesday. The API integration is built. If testing is next, no testing prompts have appeared yet — it's been 3 days.</div>
+          <div class="action" style="color:var(--info)">→ Intentional? If testing is next for predict-switch, start it today before context fades.</div>
+        </div>
+      </div>
+      <div class="dp-focus">Today's focus: Keep the predict-switch momentum — start testing while the implementation is fresh.</div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" onclick="showDay(2)">← Wednesday</button>
+    <button class="nav-btn" onclick="showDay(4)">Friday →</button>
+  </div>
+</div>
+
+<!-- ======= FRIDAY ======= -->
+<div class="day-page" id="day-4">
+  <div class="day-header">
+    <div>
+      <h2>Friday, May 10</h2>
+      <p>Strong end to the week. Testing session on predict-switch (the digest suggestion worked), then acme.dev architecture planning. Memory sees the week's behavioral pattern solidifying — planning before building is now confirmed across multiple session types.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> 3 sessions · 46 prompts</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> First testing session this week</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> Both projects advancing</div>
+    </div>
+  </div>
+
+  <div class="sessions-section">
+    <div class="section-title">Sessions — what actually happened</div>
+    <div class="session-strip">
+      <div class="session-time">10:08 AM<br>44 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Testing</h4>
+        <p>Wrote integration tests for the API layer. First testing session on predict-switch. Tests followed directly from the failure modes mapped on Wednesday — clear evidence that the pre-integration planning session produced usable test cases.</p>
+        <div class="signal-tags">
+          <span class="stag stag-l">Absence Resolved</span>
+          <span class="stag stag-d">Decision Applied</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 13% — clean</span>
+      </div>
+    </div>
+    <div class="session-strip">
+      <div class="session-time">11:50 AM<br>38 min</div>
+      <div class="session-content">
+        <h4>predict-switch · Review + Refactor</h4>
+        <p>Code review session looking at the week's implementation. Small refactors. First time "refactor this to be cleaner" phrasing appeared — caught by the digest pattern from earlier in the week.</p>
+        <div class="signal-tags">
+          <span class="stag stag-w">Repeated Prompt Pattern</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 18% — baseline</span>
+      </div>
+    </div>
+    <div class="session-strip">
+      <div class="session-time">2:00 PM<br>31 min</div>
+      <div class="session-content">
+        <h4>acme.dev · Architecture</h4>
+        <p>Architecture planning for acme.dev using the same init template pattern. Technology + data store decision + service boundaries in first prompt. Clean, structured, low corrections.</p>
+        <div class="signal-tags">
+          <span class="stag stag-d">Template Applied</span>
+          <span class="stag stag-l">Strong Pattern</span>
+        </div>
+      </div>
+      <div class="session-meta">
+        <span class="session-shape shape-linear">Linear</span>
+        <span class="session-corr">Corr: 7% — excellent</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="memory-update">
+    <div class="mu-header">
+      <h3>Memory Update — week's patterns solidifying</h3>
+      <span>End-of-week signal accumulation</span>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--purple-light);color:var(--purple)">📚</div>Skill & Domains</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">✓</span><span><span class="change-label">Resolved</span> Testing absence signal CLOSED for predict-switch. Testing session appeared on day 5 of implementation — still late but improved. Absence signal downgraded from Active to Monitoring.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Architecture template usage: 6 of last 7 architecture sessions used the init template. Correction rate average when template used: 8%. Without: 24%. Delta: 16 percentage points.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--acc-light);color:var(--acc)">✍</div>Prompting</div>
+      <div class="dim-content">
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Repeated phrase "refactor this to be cleaner" appeared again — 3 times in Friday review session. Monthly count now: 26. Template suggestion increasingly justified.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Updated</span> Specificity score: 3.9 → 4.0 (rolling avg). Crossing 4.0 threshold — will be checked in Sunday's growth ledger for milestone status.</span></div>
+      </div>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--info-light);color:var(--info)">⏱</div>Session Efficiency</div>
+      <div class="dim-content">
+        <div class="change change-added"><span class="change-icon">+</span><span><span class="change-label">Week Pattern</span> Planning sessions (arch, error handling, failure modes) preceding implementation sessions: correction rate average 14%. Without preceding planning session: 28%. This week confirmed the pattern with 4 data points.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="captures-grid">
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">📖 Episode Captured</div>
+      <div class="capture-box-body">
+        <h4>First testing session from planned failure modes</h4>
+        <p>Testing session directly referenced the failure mode map from Wednesday's planning session. Tests written against defined failure modes rather than guessed ones. This episode documents what the planning-before-testing workflow looks like when it works correctly.</p>
+      </div>
+    </div>
+    <div class="capture-box">
+      <div class="capture-box-header" style="color:var(--acc)">🗂 Semantic Index</div>
+      <div class="capture-box-body">
+        <h4>Testing pattern: failure modes → test cases</h4>
+        <p>Problem: Writing integration tests for a service API layer. Solution that worked: map failure modes first in a dedicated session, then write tests directly against those failure modes. Reusable pattern for any service integration testing.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wm-box">
+    <div class="wm-header">Working Memory — end of week snapshot</div>
+    <div class="wm-row">
+      <div class="wm-project">predict-switch</div>
+      <div class="wm-focus">Services built, API integrated, tests written. Week's work complete. Good state for next week.</div>
+      <div><span class="momentum-pill m-high">High Momentum</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">acme.dev</div>
+      <div class="wm-focus">Architecture defined Friday. Technology decided. Clean start for implementation next week.</div>
+      <div><span class="momentum-pill m-normal">Normal</span></div>
+    </div>
+  </div>
+
+  <div class="digest-preview">
+    <div class="dp-header">
+      <h4>Saturday morning digest — weekly wrap</h4>
+      <span>Generated from Friday's sessions</span>
+    </div>
+    <div class="dp-body">
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--purple-light);color:var(--purple)">↑</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--purple)">Week Growth</div>
+          <div class="text">This week confirmed something: planning sessions before implementation measurably reduce your correction rate — 14% vs 28% on average, across 4 separate examples. Architecture, error handling, failure modes — all of them paid off.</div>
+          <div class="action" style="color:var(--purple)">→ This is now a confirmed workflow pattern for you. Protect planning time even on weeks with deadline pressure.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--acc-light);color:var(--acc)">🔁</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--acc)">Repeated Prompt</div>
+          <div class="text">"Refactor this to be cleaner" has appeared 26 times this month. Still no template. Friday's review session had 3 more instances.</div>
+          <div class="action" style="color:var(--acc)">→ This weekend: create one template prompt that says what "cleaner" actually means for your code. Save it.</div>
+        </div>
+      </div>
+      <div class="dp-focus">This week's summary: You planned more, corrected less. That's the pattern worth keeping.</div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" onclick="showDay(3)">← Thursday</button>
+    <button class="nav-btn" onclick="showDay(5)">Saturday →</button>
+  </div>
+</div>
+
+<!-- ======= SATURDAY ======= -->
+<div class="day-page" id="day-5">
+  <div class="day-header">
+    <div>
+      <h2>Saturday, May 11</h2>
+      <p>No work sessions today. Memory pipeline still runs — it updates working memory (momentum signals age by one day), checks for stale constraints, and prepares for Sunday's weekly growth ledger. No LLM calls needed on zero-session days.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--text-3)"></div> 0 sessions</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--text-3)"></div> No digest tomorrow</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--info)"></div> Growth ledger runs Sunday</div>
+    </div>
+  </div>
+
+  <div class="memory-update">
+    <div class="mu-header">
+      <h3>Memory Update — maintenance pass only</h3>
+      <span>Zero sessions today — minimal processing, no LLM calls</span>
+    </div>
+
+    <div class="dim-update">
+      <div class="dim-label"><div class="dim-icon2" style="background:var(--surface2);color:var(--text-3)">⟳</div>All Dimensions</div>
+      <div class="dim-content">
+        <div class="change change-none"><span class="change-icon">—</span><span><span class="change-label">No Change</span> No sessions → no updates to scores, patterns, or decisions. Memory document unchanged.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Maintenance</span> Constraint ages incremented: embedding model config now 71 days open. Staleness alert threshold approaching (60 days already passed). Will surface in Monday's digest.</span></div>
+        <div class="change change-updated"><span class="change-icon">↻</span><span><span class="change-label">Working Memory</span> Days-since-last-session counters updated: predict-switch now 2 days, acme.dev 3 days. Both still within normal range. No stall alerts triggered.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:28px;box-shadow:var(--shadow-s);">
+    <div class="section-title" style="margin-bottom:16px;">What runs on zero-session days</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="padding:14px;background:var(--acc-light);border-radius:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--acc);margin-bottom:6px;">✓ Runs automatically</div>
+        <div style="font-size:13px;color:#1A3D2A;line-height:1.6;">Age counters increment. Staleness alerts checked. Working memory momentum signals updated. Stall detection checked for all projects.</div>
+      </div>
+      <div style="padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:6px;">✗ Does not run</div>
+        <div style="font-size:13px;color:var(--text-2);line-height:1.6;">No LLM calls. No memory schema updates. No episode extraction. No digest generated (nothing to digest). Zero cost day.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wm-box">
+    <div class="wm-header">Working Memory — Saturday state</div>
+    <div class="wm-row">
+      <div class="wm-project">predict-switch</div>
+      <div class="wm-focus">2 days since last session. Strong state heading into next week.</div>
+      <div><span class="momentum-pill m-high">High — holding</span></div>
+    </div>
+    <div class="wm-row">
+      <div class="wm-project">acme.dev</div>
+      <div class="wm-focus">3 days since last session. Architecture ready. Normal weekend pause.</div>
+      <div><span class="momentum-pill m-normal">Normal</span></div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" onclick="showDay(4)">← Friday</button>
+    <button class="nav-btn" onclick="showDay(6)">Sunday — Growth Ledger →</button>
+  </div>
+</div>
+
+<!-- ======= SUNDAY ======= -->
+<div class="day-page" id="day-6">
+  <div class="day-header">
+    <div>
+      <h2>Sunday, May 12</h2>
+      <p>Weekly growth ledger runs tonight. Eight weeks of memory snapshots compared. Three milestones confirmed. One plateau still active. The week's behavioral patterns — planning before building, diagnostic debugging — get evaluated for significance.</p>
+    </div>
+    <div class="day-stats">
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--purple)"></div> Growth ledger runs tonight</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--acc)"></div> 3 milestones confirmed</div>
+      <div class="stat-chip"><div class="stat-chip-dot" style="background:var(--warn)"></div> 1 plateau persisting</div>
+    </div>
+  </div>
+
+  <!-- Weekly evolution tracker -->
+  <div class="evo-tracker">
+    <div class="evo-header">Week's memory evolution — key metrics tracked across 5 working days</div>
+    <div class="evo-row evo-header-row">
+      <div class="evo-cell evo-label">Metric</div>
+      <div class="evo-cell">Mon</div>
+      <div class="evo-cell">Tue</div>
+      <div class="evo-cell">Wed</div>
+      <div class="evo-cell">Thu</div>
+      <div class="evo-cell">Fri</div>
+      <div class="evo-cell">Trend</div>
+      <div class="evo-cell">Baseline</div>
+    </div>
+    <div class="evo-row">
+      <div class="evo-cell evo-label">Overall corr. rate</div>
+      <div class="evo-cell val-same">21.7%</div>
+      <div class="evo-cell val-up">20.9%</div>
+      <div class="evo-cell val-up">20.2%</div>
+      <div class="evo-cell val-same">20.1%</div>
+      <div class="evo-cell val-up">19.8%</div>
+      <div class="evo-cell val-up">↓ Improving</div>
+      <div class="evo-cell val-same">22%</div>
+    </div>
+    <div class="evo-row">
+      <div class="evo-cell evo-label">Debug corr. rate</div>
+      <div class="evo-cell val-down">41%</div>
+      <div class="evo-cell val-up">17%</div>
+      <div class="evo-cell val-same">—</div>
+      <div class="evo-cell val-same">—</div>
+      <div class="evo-cell val-same">—</div>
+      <div class="evo-cell val-flag">1 data point</div>
+      <div class="evo-cell val-same">41%</div>
+    </div>
+    <div class="evo-row">
+      <div class="evo-cell evo-label">Specificity score</div>
+      <div class="evo-cell val-same">3.9</div>
+      <div class="evo-cell val-same">3.9</div>
+      <div class="evo-cell val-same">3.9</div>
+      <div class="evo-cell val-same">3.9</div>
+      <div class="evo-cell val-up">4.0</div>
+      <div class="evo-cell val-up">↑ Threshold</div>
+      <div class="evo-cell val-same">3.5</div>
+    </div>
+    <div class="evo-row">
+      <div class="evo-cell evo-label">Active decisions</div>
+      <div class="evo-cell val-same">11</div>
+      <div class="evo-cell val-same">11</div>
+      <div class="evo-cell val-up">12</div>
+      <div class="evo-cell val-up">13</div>
+      <div class="evo-cell val-up">14</div>
+      <div class="evo-cell val-new">+3 this week</div>
+      <div class="evo-cell val-same">—</div>
+    </div>
+    <div class="evo-row">
+      <div class="evo-cell evo-label">Episodes captured</div>
+      <div class="evo-cell val-up">+1</div>
+      <div class="evo-cell val-up">+1</div>
+      <div class="evo-cell val-up">+1</div>
+      <div class="evo-cell val-same">+0</div>
+      <div class="evo-cell val-up">+2</div>
+      <div class="evo-cell val-up">5 this week</div>
+      <div class="evo-cell val-same">~1–2/wk</div>
+    </div>
+    <div class="evo-row">
+      <div class="evo-cell evo-label">Planning sessions</div>
+      <div class="evo-cell val-up">1</div>
+      <div class="evo-cell val-same">0</div>
+      <div class="evo-cell val-up">1</div>
+      <div class="evo-cell val-same">0</div>
+      <div class="evo-cell val-up">1</div>
+      <div class="evo-cell val-up">3 this week</div>
+      <div class="evo-cell val-same">~0–1/wk</div>
+    </div>
+  </div>
+
+  <!-- Growth ledger output -->
+  <div style="margin-bottom:28px;">
+    <div class="section-title">Sunday night growth ledger results</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-s);">
+        <div style="padding:12px 18px;background:var(--acc-light);border-bottom:1px solid var(--acc-mid);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--acc);">↑ Milestone Confirmed</div>
+        <div style="padding:16px 18px;">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">Planning-before-building workflow</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:10px;">Across 4 confirmed instances this week, planning sessions before implementation produced 14% correction rate vs 28% without. Pattern held across: architecture init, error handling, failure mode mapping, testing. Cross-session behavioral consistency = confirmed habit.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;padding:3px 8px;background:var(--acc-light);color:var(--acc);border-radius:6px;font-weight:600;">4 data points this week</span>
+            <span style="font-size:11px;padding:3px 8px;background:var(--acc-light);color:var(--acc);border-radius:6px;font-weight:600;">Confidence: High</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-s);">
+        <div style="padding:12px 18px;background:var(--acc-light);border-bottom:1px solid var(--acc-mid);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--acc);">↑ Milestone Confirmed</div>
+        <div style="padding:16px 18px;">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">Specificity score crossed 4.0</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:10px;">Score reached 4.0 on Friday — up from 3.5 threshold crossed 3 weeks ago, now up to 4.0. Causal link: architecture init template being applied consistently across both projects. First time the template transferred to a new project (acme.dev) unchanged.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;padding:3px 8px;background:var(--acc-light);color:var(--acc);border-radius:6px;font-weight:600;">1 week so far</span>
+            <span style="font-size:11px;padding:3px 8px;background:var(--info-light);color:var(--info);border-radius:6px;font-weight:600;">Confidence: Medium — monitoring</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-s);">
+        <div style="padding:12px 18px;background:var(--purple-light);border-bottom:1px solid #C9B8E8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--purple);">↑ Milestone Confirmed (Week)</div>
+        <div style="padding:16px 18px;">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">"Inspect data first" principle — Very Strong</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:10px;">Third independent confirmation this week (acme.dev data store decision). Principle now applied across 3 different project contexts and 3 different technology decisions. Elevated from Strong to Very Strong. This lesson from Feb 26th has fully transferred into habit.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span style="font-size:11px;padding:3px 8px;background:var(--purple-light);color:var(--purple);border-radius:6px;font-weight:600;">3 cross-project confirmations</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-s);">
+        <div style="padding:12px 18px;background:var(--warn-light);border-bottom:1px solid var(--warn-mid);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--warn);">― Plateau Persisting</div>
+        <div style="padding:16px 18px;">
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">Debugging sessions — 5 weeks flat</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:10px;">Tuesday's diagnostic session showed what's possible (17% vs 41% baseline) but was only 1 instance. Monday's spiral was the baseline pattern. One good session doesn't break the plateau — needs 3 consecutive weeks above threshold. Still monitoring.</div>
+          <div style="font-size:13px;color:var(--warn);font-weight:500;">Intervention: Tuesday's diagnostic approach needs to become the default, not the exception.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monday preview digest -->
+  <div class="digest-preview">
+    <div class="dp-header">
+      <h4>Monday morning digest — next week kickoff</h4>
+      <span>Generated Sunday night from the week's patterns</span>
+    </div>
+    <div class="dp-body">
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--purple-light);color:var(--purple)">↑</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--purple)">Weekly Growth</div>
+          <div class="text">This week confirmed your planning-before-building workflow. 4 planning sessions, each reducing the following implementation session's correction rate by roughly half. That's not a coincidence — it's your workflow now.</div>
+          <div class="action" style="color:var(--purple)">→ This week: protect the first session of any new feature for planning. Even 30 minutes. The data shows it pays back immediately.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--warn-light);color:var(--warn)">🔄</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--warn)">Plateau — Debugging</div>
+          <div class="text">Tuesday showed what diagnostic debugging looks like for you — it worked. But it was one session. The plateau only breaks with 3 consecutive weeks of improvement. This week you have one data point. You need two more.</div>
+          <div class="action" style="color:var(--warn)">→ Every debugging session this week: list 3 possible causes before prompt 1. Test it again.</div>
+        </div>
+      </div>
+      <div class="dp-insight">
+        <div class="dp-icon" style="background:var(--acc-light);color:var(--acc)">🔁</div>
+        <div class="dp-insight-content">
+          <div class="cat" style="color:var(--acc)">Repeated Prompt — Still</div>
+          <div class="text">"Refactor this to be cleaner" appeared 29 times this month. Still no template. You noted it on Friday and didn't act. The prompt reappears every session.</div>
+          <div class="action" style="color:var(--acc)">→ This Monday: write the template once. "Refactor [module] to follow [standard] — prioritise [specific thing]." Save it.</div>
+        </div>
+      </div>
+      <div class="dp-focus">Next week's focus: Break the debugging plateau — diagnose before correcting, three sessions in a row.</div>
+    </div>
+  </div>
+
+  <div class="day-nav-buttons">
+    <button class="nav-btn" onclick="showDay(5)">← Saturday</button>
+    <button class="nav-btn" disabled>End of week →</button>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+  function showDay(n) {
+    document.querySelectorAll('.day-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('day-' + n).classList.add('active');
+    document.querySelectorAll('.day-tab')[n].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
